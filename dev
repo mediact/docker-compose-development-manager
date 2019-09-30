@@ -1,0 +1,216 @@
+#!/bin/bash
+# vim: et:sw=2:ts=2:ai
+
+# Initialize primary variables
+init() {
+  APP_SELF_PATH=$(realpath "$0")
+  APP_PROJECT_PATH=$(pwd)
+  APP_PROJECT=$(basename "${APP_SELF_PATH}")
+}
+
+# Load environment variables
+load_env() {
+  # Check if docker-compose.yml exists
+  if [ ! -e "${APP_PROJECT_PATH}/docker-compose.yml" ] && [ ! -e "${APP_PROJECT_PATH}/docker-compose.yaml" ]; then
+    echo "Docker compose file not found."
+    return 1
+  fi
+
+  # Configure .env files
+  local env="${APP_PROJECT_PATH}/.env"
+  local env_local="${APP_PROJECT_PATH}/.env.local"
+
+  # Check if the .env file exists
+  if [ ! -e "$env" ]; then
+    echo "Environment file $env not found"
+    return 1
+  fi
+
+  # Set the default environment
+  export SPECIFIED_ENV=dev
+
+  # Load all variables as if they are exported
+  set -a
+
+  # Load all .env variables
+  # shellcheck source=.env
+  source "$env"
+
+  # Check and load if environment local .env file exists
+  # shellcheck source=.env.local
+  if [ -e "$env_local" ]; then
+    source "$env_local"
+  else
+    touch "$env_local"
+  fi
+
+  # Configure .env files for specified SPECIFIED_ENV
+  local specified_env="${APP_PROJECT_PATH}/.env.${SPECIFIED_ENV}"
+  local specified_env_local="${APP_PROJECT_PATH}/.env.${SPECIFIED_ENV}.local"
+
+  # Check and load if environment specific .env file exists
+  # shellcheck source=.env.dev
+  if [ -e "$specified_env" ]; then
+    source "$specified_env"
+  else
+    touch "$specified_env"
+  fi
+
+  # Check and load if environment specific local .env file exists
+  # shellcheck source=.env.dev.local
+  if [ -e "$specified_env_local" ]; then
+    source "$specified_env_local"
+  else
+    touch "$specified_env_local"
+  fi
+
+  # Don't automatically export set variables
+  set +a
+
+  export PROJECT=${APP_PROJECT}
+  GID=$(id -g)
+  export GID
+  export UID
+
+  # Ensure composer home directory exists
+  if [ -n "${COMPOSER_HOME_LOCAL}" ]; then
+    eval COMPOSER_HOME_LOCAL="$COMPOSER_HOME_LOCAL"
+    if [ ! -d "${COMPOSER_HOME_LOCAL}" ]; then
+      mkdir -p "${COMPOSER_HOME_LOCAL}"
+    fi
+    export COMPOSER_HOME_LOCAL
+  fi
+
+  # Ensure Git configuration file exists
+  if [ -n "${GIT_CONFIG_LOCAL}" ]; then
+    eval GIT_CONFIG_LOCAL="$GIT_CONFIG_LOCAL"
+    if [ ! -e "${GIT_CONFIG_LOCAL}" ]; then
+      touch "${GIT_CONFIG_LOCAL}"
+    fi
+    export GIT_CONFIG_LOCAL
+  fi
+
+  # Ensure Git ignore file exists
+  if [ -n "${GIT_IGNORE_LOCAL}" ]; then
+    eval GIT_IGNORE_LOCAL="$GIT_IGNORE_LOCAL"
+    if [ ! -e "${GIT_IGNORE_LOCAL}" ]; then
+      touch "${GIT_IGNORE_LOCAL}"
+    fi
+    export GIT_IGNORE_LOCAL
+  fi
+
+  # Ensure SSH directory exists
+  if [ -n "${SSH_LOCAL}" ]; then
+    eval SSH_LOCAL="$SSH_LOCAL"
+    if [ ! -d "${SSH_LOCAL}" ]; then
+      mkdir -p "${SSH_LOCAL}"
+    fi
+    export SSH_LOCAL
+  fi
+}
+
+# Container for all supported commands
+run() {
+
+  # Open the shell of a container
+  console() {
+    local shell="console"
+    [ "$1" != "" ] && shell=$1
+    docker-compose run \
+      --rm \
+      -u "$(id -u):$(id -g)" \
+      --no-deps \
+      "$shell" \
+      sh -l
+    return $?
+  }
+
+  # Turn off all containers or a specific container
+  down() {
+    docker-compose down "$@"
+    return $?
+  }
+
+  # Get help for commands
+  help() {
+    console() {
+      echo "Open up a console on a service."
+      echo "Usage: $0 console [service]"
+      echo "Options:"
+      echo "  service: Defaults to console"
+      echo "Available services:"
+      load_env
+      docker-compose ps --services | xargs echo " "
+      return 0
+    }
+
+    down() {
+      echo "Turn off development environment."
+      echo "Usage: $0 down [options...]"
+      echo "For more info, see: docker-compose help down"
+      return 0
+    }
+
+    pull() {
+      echo "Pull latest development environment images."
+      echo "Usage: $0 pull"
+      return 0
+    }
+
+    up() {
+      echo "Turn on development environment."
+      echo "Usage: $0 up [options...]"
+      echo "For more info, see: docker-compose help up"
+      return 0
+    }
+
+    # Attempt to run a command or output the help
+    if [ "$(type -t "$1")" == "function" ]; then
+      load_env
+      "$@"
+      return $?
+    else
+      echo "Usage: $0 <option>"
+      echo "The following options are available"
+      echo "  console: Open the console"
+      echo "  down: Stop the environment"
+      echo "  pull: Pull latest images"
+      echo "  up: Start the environment"
+    fi
+    return $?
+  }
+
+  # Pull latest images
+  pull() {
+    docker-compose pull
+    return $?
+  }
+
+  # Turn on all containers or a specific container
+  up() {
+    docker-compose up "$@" -d
+    return $?
+  }
+
+  # Attempt to run a command or output the help
+  if [ "$(type -t "$1")" == "function" ]; then
+    load_env
+    if [ "$?" == "0" ]; then
+      "$@"
+    fi
+    return $?
+  else
+    help "$@"
+    return 1
+  fi
+}
+
+# Main process execution
+main() {
+  init
+  run "$@"
+  exit $?
+}
+
+# Run the manager
+main "$@"
