@@ -188,7 +188,7 @@ run() {
 
   # Turn on all containers or a specific container
   up() {
-    docker-compose up "$@" -d
+    docker-compose up -d "$@"
     return $?
   }
 
