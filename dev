@@ -1,13 +1,6 @@
 #!/bin/bash
 # vim: et:sw=2:ts=2:ai
 
-# Initialize primary variables
-init() {
-  APP_SELF_PATH=$(realpath "$0")
-  APP_PROJECT_PATH=$(pwd)
-  APP_PROJECT=$(basename "${APP_SELF_PATH}")
-}
-
 # Load environment variables
 load_env() {
   # Check if docker-compose.yml exists
@@ -40,8 +33,6 @@ load_env() {
   # shellcheck source=.env.local
   if [ -e "$env_local" ]; then
     source "$env_local"
-  else
-    touch "$env_local"
   fi
 
   # Configure .env files for specified SPECIFIED_ENV
@@ -52,16 +43,12 @@ load_env() {
   # shellcheck source=.env.dev
   if [ -e "$specified_env" ]; then
     source "$specified_env"
-  else
-    touch "$specified_env"
   fi
 
   # Check and load if environment specific local .env file exists
   # shellcheck source=.env.dev.local
   if [ -e "$specified_env_local" ]; then
     source "$specified_env_local"
-  else
-    touch "$specified_env_local"
   fi
 
   # Don't automatically export set variables
@@ -151,6 +138,15 @@ run() {
       return 0
     }
 
+    init() {
+      echo "Initialize a project type for development."
+      echo "Usage: $0 init [-f|--force] <project-type>"
+      echo "Available project types: "
+      for type in "${APP_SELF_PATH}"/templates/*; do
+        echo "- $(basename $type)"
+      done
+    }
+
     pull() {
       echo "Pull latest development environment images."
       echo "Usage: $0 pull"
@@ -166,7 +162,6 @@ run() {
 
     # Attempt to run a command or output the help
     if [ "$(type -t "$1")" == "function" ]; then
-      load_env
       "$@"
       return $?
     else
@@ -178,6 +173,35 @@ run() {
       echo "  up: Start the environment"
     fi
     return $?
+  }
+
+  # Initialize a project type for development
+  # shellcheck disable=SC2120
+  init() {
+    local force=0
+    local type=""
+    for option in "$@"; do
+      case "$option" in
+        -f|--force)
+          force=1
+          ;;
+        *)
+          if [ "$type" == "" ]; then
+            type="$option"
+          fi
+          ;;
+      esac
+    done
+    if [ ! -e "${APP_PROJECT_PATH}/docker-compose.yml" ] && [ ! -e "${APP_PROJECT_PATH}/docker-compose.yaml" ] || [ "$force" == "1" ]; then
+      cp -prf "${APP_SELF_PATH}"/templates/"${type}"/* "${APP_PROJECT_PATH}"
+      cp -prf "${APP_SELF_PATH}"/templates/"${type}"/.[!.]* "${APP_PROJECT_PATH}"
+      echo "Initialized $type project."
+      return $?
+    elif [ -e "${APP_PROJECT_PATH}/docker-compose.yml" ] || [ -e "${APP_PROJECT_PATH}/docker-compose.yaml" ]; then
+      echo "Warning: Project already initialized. Use --force to re-initialize the project"
+    fi
+    run help init
+    exit 1
   }
 
   # Pull latest images
@@ -194,8 +218,7 @@ run() {
 
   # Attempt to run a command or output the help
   if [ "$(type -t "$1")" == "function" ]; then
-    load_env
-    if [ "$?" == "0" ]; then
+    if [ "$1" == "init" ] || [ "$1" == "help" ] || load_env; then
       "$@"
     fi
     return $?
@@ -207,7 +230,17 @@ run() {
 
 # Main process execution
 main() {
-  init
+  # Ensure root does not use this
+  if [[ "$(id -u)" == "0" ]]; then
+    echo "This script should not be run as root."
+    exit 1
+  fi
+  # Initialize primary variables
+  APP_SELF_PATH=$(dirname "$0")
+  APP_PROJECT_PATH=$(pwd)
+  APP_PROJECT=$(basename "${APP_SELF_PATH}")
+
+  # Run the tool
   run "$@"
   exit $?
 }

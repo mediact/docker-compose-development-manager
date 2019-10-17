@@ -1,0 +1,97 @@
+# vim: ai:ts=2:sw=2:et
+version: "3"
+networks: {}
+volumes:
+  db-data:
+  db-logs:
+  web-logs:
+
+services:
+  amqp:
+    image: rabbitmq:3.8-alpine
+    network_mode: bridge
+    environment:
+      RABBITMQ_DEFAULT_USER: "rabbitmq"
+      RABBITMQ_DEFAULT_PASS: "rabbitmq"
+      RABBITMQ_DEFAULT_VHOST: "/"
+
+  console:
+    image: php:7.3-alpine
+    user: "${UID}:${GID}"
+    links:
+      - amqp
+      - db
+      - mailcatch
+    ports:
+      - "${XDEBUG_PORT_CONSOLE}:9001"
+    network_mode: bridge
+    environment:
+      - COMPOSER_MEMORY_LIMIT=-1
+      - DATABASE_URL
+      - MYSQL_ROOT_PASSWORD
+    working_dir: /var/www/html
+    volumes:
+      - ./:/var/www/html:rw
+      - "${COMPOSER_HOME_LOCAL}:${HOME}/.composer:rw"
+      - "${GIT_CONFIG_LOCAL}:/etc/gitconfig:ro"
+      - "${GIT_IGNORE_LOCAL}:${HOME}/.gitignore:ro"
+      - "${SSH_LOCAL}:${HOME}/.ssh:ro"
+      - /etc/group:/etc/group:ro
+      - /etc/passwd:/etc/passwd:ro
+      - /etc/shadow:/etc/shadow:ro
+
+  db:
+    image: percona:5.7
+    environment:
+      - MYSQL_ROOT_PASSWORD
+    ports:
+      - "${MYSQL_PORT}:3306"
+    network_mode: bridge
+    volumes:
+      - db-data:/var/lib/mysql:rw
+      - db-logs:/var/logs/mysql:rw
+
+  mailcatch:
+    image: mailhog/mailhog
+    network_mode: bridge
+
+  redis:
+    image: redis:5.0-alpine
+    network_mode: bridge
+
+  web:
+    image: magento-2-nginx-local:latest
+#    image: nginx:stable-alpine
+    links:
+      - worker
+    network_mode: bridge
+    ports:
+      - "${WEB_PORT}:80"
+    environment:
+      - PHP_FPM_HOST=worker:9000
+    volumes:
+      - ./pub:/var/www/html/pub:ro
+      - ./nginx.conf.sample:/var/www/html/nginx.conf.sample:ro
+      - web-logs:/var/log/nginx:rw
+
+  worker:
+    image: php:7.3-fpm-alpine
+    user: "${UID}:${GID}"
+    links:
+      - amqp
+      - db
+      - mailcatch
+      - redis
+    ports:
+      - "${XDEBUG_PORT_WORKER}:9002"
+    network_mode: bridge
+    environment:
+      - DATABASE_URL
+      - GOOGLE_OAUTH_CLIENT_ID
+      - GOOGLE_OAUTH_CLIENT_SECRET
+      - PHP_EXTRA_CONFIGURE_ARGS
+    volumes:
+      - ./:/var/www/html:rw
+      - /etc/group:/etc/group:ro
+      - /etc/passwd:/etc/passwd:ro
+      - /etc/shadow:/etc/shadow:ro
