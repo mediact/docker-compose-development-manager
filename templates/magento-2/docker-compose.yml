@@ -16,12 +16,13 @@ services:
       RABBITMQ_DEFAULT_VHOST: "/"
 
   console:
-    image: php:7.3-alpine
+    image: eu.gcr.io/aequalis-io/php-image:latest
+#    image: php:7.3-alpine
     user: "${UID}:${GID}"
     links:
-      - amqp
       - db
       - mailcatch
+      - redis
     ports:
       - "${XDEBUG_PORT_CONSOLE}:9001"
     network_mode: bridge
@@ -29,6 +30,9 @@ services:
       - COMPOSER_MEMORY_LIMIT=-1
       - DATABASE_URL
       - MYSQL_ROOT_PASSWORD
+    env_file:
+      - .env
+      - .env.dev
     working_dir: /var/www/html
     volumes:
       - ./:/var/www/html:rw
@@ -50,6 +54,9 @@ services:
     volumes:
       - db-data:/var/lib/mysql:rw
       - db-logs:/var/logs/mysql:rw
+      - /etc/group:/etc/group:ro
+      - /etc/passwd:/etc/passwd:ro
+      - /etc/shadow:/etc/shadow:ro
 
   mailcatch:
     image: mailhog/mailhog
@@ -63,6 +70,7 @@ services:
     image: magento-2-nginx-local:latest
 #    image: nginx:stable-alpine
     links:
+      - mailcatch
       - worker
     network_mode: bridge
     ports:
@@ -75,10 +83,10 @@ services:
       - web-logs:/var/log/nginx:rw
 
   worker:
-    image: php:7.3-fpm-alpine
+    image: eu.gcr.io/aequalis-io/php-fpm-image:latest
+#    image: php:7.3-fpm-alpine
     user: "${UID}:${GID}"
     links:
-      - amqp
       - db
       - mailcatch
       - redis
