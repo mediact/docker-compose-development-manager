@@ -1,111 +1,134 @@
-# Magento Installation
-bin/magento setup:install --db-host "${DB_HOST}" \
-  --db-name "${DB_DB}" \
-  --db-user "${DB_USER}" \
-  --db-password "${DB_PASS}" \
-  --admin-firstname "${ADMIN_FIRSTNAME}" \
-  --admin-lastname "${ADMIN_LASTNAME}" \
-  --admin-email "${ADMIN_EMAIL}" \
-  --admin-user "${ADMIN_USER}" \
-  --admin-password "${ADMIN_PASS}" \
-  --cache-backend="redis" \
-  --cache-backend-redis-server="${REDIS_HOST}" \
-  --cache-backend-redis-port="${REDIS_PORT}" \
-  --cache-backend-redis-password="${REDIS_PASS}" \
-  --cache-backend-redis-db=0 \
-  --page-cache="redis" \
-  --page-cache-redis-server="${REDIS_HOST}" \
-  --page-cache-redis-port="${REDIS_PORT}" \
-  --page-cache-redis-password="${REDIS_PASS}" \
-  --page-cache-redis-db=1 \
-  --page-cache-redis-compress-data=0 \
-  --session-save="redis" \
-  --session-save-redis-host="${REDIS_HOST}" \
-  --session-save-redis-port="${REDIS_PORT}" \
-  --session-save-redis-password="${REDIS_PASS}" \
-  --session-save-redis-db=2 \
-  --session-save-redis-timeout=2.5 \
-  --session-save-redis-persistent-id="" \
-  --session-save-redis-compression-threshold=2048 \
-  --session-save-redis-compression-lib="gzip" \
-  --session-save-redis-log-level=1 \
-  --session-save-redis-max-concurrency=6 \
-  --session-save-redis-break-after-frontend=5 \
-  --session-save-redis-break-after-adminhtml=30 \
-  --session-save-redis-first-lifetime=600 \
-  --session-save-redis-bot-first-lifetime=600 \
-  --session-save-redis-bot-lifetime=60 \
-  --session-save-redis-disable-locking=0 \
-  --session-save-redis-min-lifetime=60 \
-  --session-save-redis-max-lifetime=2592000
+#!/usr/bin/env bash
 
-# Settings
-bin/magento config:set web/unsecure/base_url "${STORE_URL}"
-bin/magento config:set web/secure/base_url "${STORE_URL}"
-bin/magento config:set general/store_information/name "${STORE_NAME}"
-bin/magento config:set general/store_information/street_line1 "${STORE_STREET1}"
-bin/magento config:set general/store_information/street_line2 "${STORE_STREET2}"
-bin/magento config:set general/store_information/postcode "${STORE_POSTCODE}"
-bin/magento config:set general/store_information/city "${STORE_CITY}"
-bin/magento config:set general/store_information/phone "${STORE_PHONE}"
-bin/magento config:set general/store_information/hours "${STORE_HOURS}"
-bin/magento config:set general/store_information/merchant_vat_number "${STORE_VAT}"
-bin/magento config:set general/store_information/country_id "${STORE_COUNTRY_ID}"
-bin/magento config:set general/store_information/region_id "${STORE_REGION_ID}"
-bin/magento config:set catalog/custom_options/date_fields_order "d,m,y"
-bin/magento config:set catalog/custom_options/time_format "24h"
-bin/magento config:set catalog/custom_options/use_calendar "1"
-bin/magento config:set catalog/custom_options/year_range ","
-bin/magento config:set catalog/frontend/flat_catalog_category "1"
-bin/magento config:set catalog/frontend/flat_catalog_product "1"
-bin/magento config:set currency/options/base "EUR"
-bin/magento config:set currency/options/default "EUR"
-bin/magento config:set currency/options/allow "EUR"
-bin/magento config:set dev/css/minify_files "1"
-bin/magento config:set dev/css/merge_css_files "0"
-bin/magento config:set dev/js/merge_files "0"
-bin/magento config:set dev/js/minify_files "1"
-bin/magento config:set dev/js/move_script_to_bottom "1"
-bin/magento config:set dev/js/enable_js_bundling "0"
-bin/magento config:set dev/template/minify_html "1"
-bin/magento config:set dev/grid/async_indexing "1"
-bin/magento config:set general/country/allow "NL"
-bin/magento config:set general/country/default "NL"
-bin/magento config:set general/locale/code "nl_NL"
-bin/magento config:set general/locale/firstday "1"
-bin/magento config:set general/locale/timezone "Europe/Amsterdam"
-bin/magento config:set general/locale/weight_unit "kgs"
-bin/magento config:set web/secure/use_in_adminhtml "1"
-bin/magento config:set web/secure/use_in_frontend "1"
-bin/magento config:set web/seo/use_rewrites "1"
-bin/magento config:set web/secure/use_in_frontend "1"
-bin/magento config:set web/session/use_frontend_sid "0"
-bin/magento config:set mediact_layout_handle_optimizer/general/enable "1"
-bin/magento config:set multishipping/options/checkout_multiple "0"
-bin/magento config:set sales_email/general/async_sending "1"
-bin/magento config:set sales/gift_options/wrapping_allow_order "0"
-bin/magento config:set sales/gift_options/wrapping_allow_items "0"
-bin/magento config:set sales/gift_options/allow_gift_receipt "0"
-bin/magento config:set sales/gift_options/allow_printed_card "0"
-bin/magento config:set tax/defaults/country "NL"
+# Create env.php file
+cat << EOT > app/etc/env.php
+<?php
 
-# Add MediaCT to the Google login wildcard domains
-bin/magento mediact:googleadmin:addwildcard "*@mediact.nl" "${ADMIN_USER}"
-
-# Clear the cache
-bin/magento cache:flush
-
-# Set indexer to schedule
-bin/magento indexer:set-mode schedule
-bin/magento indexer:reindex
-
-# Install language packs
-composer require community-engineering/language-nl_nl
-composer require community-engineering/language-fr_fr
-composer require community-engineering/language-de_de
-
-# Deploy
-bin/magento setup:upgrade
-bin/magento setup:di:compile
-bin/magento setup:static-content:deploy -f -j 10 -s standard en_US nl_NL
-bin/magento cache:flush
+return [
+    'backend' => [
+        'frontName' => getenv('BACKEND__FRONT_NAME'),
+    ],
+    'crypt' => [
+        'key' => getenv('CRYPT__KEY'),
+    ],
+    'db' => [
+        'connection' => [
+            'indexer' => [
+                'host' => getenv('DB__CONNECTION__INDEXER__HOST'),
+                'dbname' => getenv('DB__CONNECTION__INDEXER__DBNAME'),
+                'username' => getenv('DB__CONNECTION__INDEXER__USERNAME'),
+                'password' => getenv('DB__CONNECTION__INDEXER__PASSWORD'),
+                'model' => 'mysql4',
+                'engine' => 'innodb',
+                'initStatements' => 'SET NAMES utf8;',
+                'active' => '1',
+                'persistent' => null,
+            ],
+            'default' => [
+                'host' => getenv('DB__CONNECTION__DEFAULT__HOST'),
+                'dbname' => getenv('DB__CONNECTION__DEFAULT__DBNAME'),
+                'username' => getenv('DB__CONNECTION__DEFAULT__USERNAME'),
+                'password' => getenv('DB__CONNECTION__DEFAULT__PASSWORD'),
+                'model' => 'mysql4',
+                'engine' => 'innodb',
+                'initStatements' => 'SET NAMES utf8;',
+                'active' => '1',
+            ],
+        ],
+        'table_prefix' => ''
+    ],
+    'resource' => [
+        'default_setup' => [
+            'connection' => 'default',
+        ],
+    ],
+    'session' => [
+        'save' => 'redis',
+        'redis' => [
+            'host' => getenv('SESSION__REDIS__HOST'),
+            'port' => getenv('SESSION__REDIS__PORT'),
+            'password' => getenv('SESSION__REDIS__PASSWORD'),
+            'timeout' => '2.5',
+            'persistent_identifier' => '',
+            'database' => getenv('SESSION__REDIS__DATABASE'),
+            'compression_threshold' => '2048',
+            'compression_library' => 'gzip',
+            'log_level' => '1',
+            'max_concurrency' => '6',
+            'break_after_frontend' => '5',
+            'break_after_adminhtml' => '30',
+            'first_lifetime' => '600',
+            'bot_first_lifetime' => '600',
+            'bot_lifetime' => '60',
+            'disable_locking' => '0',
+            'min_lifetime' => '60',
+            'max_lifetime' => '2592000',
+            'sentinel_master' => '',
+            'sentinel_servers' => '',
+            'sentinel_connect_retries' => '5',
+            'sentinel_verify_master' => '0',
+        ]
+    ],
+    'x-frame-options' => 'SAMEORIGIN',
+    'MAGE_MODE' => 'production',
+    'cache_types' => [
+        'config' => 1,
+        'layout' => 1,
+        'block_html' => 1,
+        'collections' => 1,
+        'reflection' => 1,
+        'db_ddl' => 1,
+        'compiled_config' => 1,
+        'eav' => 1,
+        'customer_notification' => 1,
+        'config_integration' => 1,
+        'config_integration_api' => 1,
+        'target_rule' => 1,
+        'google_product' => 1,
+        'full_page' => 1,
+        'config_webservice' => 1,
+        'translate' => 1,
+        'vertex' => 1,
+    ],
+    'install' => [
+        'date' => 'Fri, 01 Jun 2018 08:13:59 +0000',
+    ],
+    'queue' => [
+        'amqp' => [
+            'host' => getenv('QUEUE__AMQP__HOST'),
+            'port' => getenv('QUEUE__AMQP__PORT'),
+            'user' => getenv('QUEUE__AMQP__USER'),
+            'password' => getenv('QUEUE__AMQP__PASSWORD'),
+            'virtualhost' => getenv('QUEUE__AMQP__VIRTUALHOST'),
+        ],
+    ],
+    'cache' => [
+        'frontend' => [
+            'default' => [
+                'id_prefix' => '40d_',
+                'backend' => 'Cm_Cache_Backend_Redis',
+                'backend_options' => [
+                    'server' => getenv('CACHE__FRONTEND__DEFAULT__BACKEND_OPTIONS__HOST'),
+                    'port' => getenv('CACHE__FRONTEND__DEFAULT__BACKEND_OPTIONS__PORT'),
+                    'database' => getenv('CACHE__FRONTEND__DEFAULT__BACKEND_OPTIONS__DATABASE'),
+                    'password' => getenv('CACHE__FRONTEND__DEFAULT__BACKEND_OPTIONS__PASSWORD'),
+                    'compress_data' => '1',
+                    'compression_lib' => '',
+                ],
+            ],
+            'page_cache' => [
+                'id_prefix' => '40d_',
+                'backend' => 'Cm_Cache_Backend_Redis',
+                'backend_options' => [
+                    'server' => getenv('CACHE__FRONTEND__PAGE_CACHE__BACKEND_OPTIONS__HOST'),
+                    'port' => getenv('CACHE__FRONTEND__PAGE_CACHE__BACKEND_OPTIONS__PORT'),
+                    'database' => getenv('CACHE__FRONTEND__PAGE_CACHE__BACKEND_OPTIONS__DATABASE'),
+                    'password' => getenv('CACHE__FRONTEND__PAGE_CACHE__BACKEND_OPTIONS__PASSWORD'),
+                    'compress_data' => '0',
+                    'compression_lib' => '',
+                ],
+            ],
+        ],
+    ],
+];
+EOT
