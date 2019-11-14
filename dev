@@ -192,6 +192,10 @@ run() {
           ;;
       esac
     done
+    if [ ! -e "${APP_SELF_PATH}"/templates/"${type}" ]; then
+      echo "Type '$type' not found."
+      exit 1
+    fi
     if [ ! -e "${APP_PROJECT_PATH}/docker-compose.yml" ] && [ ! -e "${APP_PROJECT_PATH}/docker-compose.yaml" ] || [ "$force" == "1" ]; then
       cp -prf "${APP_SELF_PATH}"/templates/"${type}"/* "${APP_PROJECT_PATH}"
       cp -prf "${APP_SELF_PATH}"/templates/"${type}"/.[!.]* "${APP_PROJECT_PATH}"
