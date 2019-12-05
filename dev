@@ -153,6 +153,12 @@ run() {
       return 0
     }
 
+    run() {
+      echo "Run a command on the development environment."
+      echo "Usage: $0 run <command>"
+      return 0
+    }
+
     up() {
       echo "Turn on development environment."
       echo "Usage: $0 up [options...]"
@@ -170,6 +176,7 @@ run() {
       echo "  console: Open the console"
       echo "  down: Stop the environment"
       echo "  pull: Pull latest images"
+      echo "  run: Run a command"
       echo "  up: Start the environment"
     fi
     return $?
@@ -211,6 +218,12 @@ run() {
   # Pull latest images
   pull() {
     docker-compose pull
+    return $?
+  }
+
+  # Run a command
+  run() {
+    docker-compose run console "$@"
     return $?
   }
 
