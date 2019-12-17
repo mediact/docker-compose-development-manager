@@ -60,7 +60,7 @@ services:
       - "${ELASTICSEARCH_PORT}:9200"
     network_mode: bridge
     environment:
-      - ELASTIC_PASSWORD
+      - ELASTICSEARCH_PASSWORD
       - ES_JAVA_OPTS=-Xms1g -Xmx1g
       - discovery.type=single-node
       - http.host=0.0.0.0
@@ -76,9 +76,9 @@ services:
     network_mode: bridge
     command: filebeat -e -strict.perms=false
     environment:
-      - ELASTICSEARCH_HOST=http://elasticsearch:9200
-      - ELASTICSEARCH_USERNAME=elastic
-      - "ELASTICSEARCH_PASSWORD=${ELASTIC_PASSWORD}"
+      - ELASTICSEARCH_HOST
+      - ELASTICSEARCH_USERNAME
+      - ELASTICSEARCH_PASSWORD
       - KIBANA_HOST=kibana
     links:
       - db
@@ -99,9 +99,9 @@ services:
       - "${KIBANA_PORT}:5601"
     network_mode: bridge
     environment:
-      ELASTIC_PASSWORD: "${ELASTIC_PASSWORD}"
+      ELASTIC_PASSWORD: "${ELASTICSEARCH_PASSWORD}"
       SERVER_NAME: kibana
-      ELASTICSEARCH_HOSTS: http://elasticsearch:9200
+      ELASTICSEARCH_HOSTS: "${ELASTICSEARCH_INSTANCE_URL}"
 
   logstash:
     image: docker.elastic.co/logstash/logstash:7.3.1
@@ -109,8 +109,8 @@ services:
       - elasticsearch
     network_mode: bridge
     environment:
-      ES_URL: "elasticsearch:9300"
-      ELASTIC_PASSWORD: "${ELASTIC_PASSWORD}"
+      ES_URL: "${ELASTICSEARCH_NODES_URL}"
+      ELASTIC_PASSWORD: "${ELASTICSEARCH_PASSWORD}"
       LS_JAVA_OPTS: "-Xmx256m -Xms256m"
 
   mailcatch:
