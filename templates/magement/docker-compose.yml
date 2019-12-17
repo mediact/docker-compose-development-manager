@@ -25,11 +25,9 @@ services:
       - MAGEMENT_SECRET
       - MYSQL_ROOT_PASSWORD
     volumes:
+      - "${HOME}:${HOME}"
       - ./:/var/www/html:rw
-      - "${COMPOSER_HOME_LOCAL}:${HOME}/.composer:rw"
       - "${GIT_CONFIG_LOCAL}:/etc/gitconfig:ro"
-      - "${GIT_IGNORE_LOCAL}:${HOME}/.gitignore:ro"
-      - "${SSH_LOCAL}:${HOME}/.ssh:ro"
       - /etc/group:/etc/group:ro
       - /etc/passwd:/etc/passwd:ro
       - /etc/shadow:/etc/shadow:ro
