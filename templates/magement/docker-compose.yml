@@ -10,7 +10,7 @@ volumes:
 services:
   console:
     image: eu.gcr.io/aequalis-io/php-image:latest
-    user: "${UID}:${GID}"
+    user: "${CUID}:${CGID}"
     links:
       - db
       - elasticsearch
@@ -25,7 +25,7 @@ services:
       - MAGEMENT_SECRET
       - MYSQL_ROOT_PASSWORD
     volumes:
-      - "${HOME}:${HOME}"
+      - "${HOME}:${CHOME}"
       - ./:/var/www/html:rw
       - "${GIT_CONFIG_LOCAL}:/etc/gitconfig:ro"
       - /etc/group:/etc/group:ro
@@ -131,7 +131,7 @@ services:
 
   worker:
     image: eu.gcr.io/aequalis-io/php-fpm-image:latest
-    user: "${UID}:${GID}"
+    user: "${CUID}:${CGID}"
     links:
       - db
       - elasticsearch

@@ -3,6 +3,15 @@
 
 # Load environment variables
 load_env() {
+  # We use "tr" to translate the uppercase "uname" output into lowercase
+  UNAME=$(uname -s | tr '[:upper:]' '[:lower:]')
+  # Then we map the output to the names used on the Github releases page
+  case "$UNAME" in
+      linux*)     MACHINE=linux;;
+      darwin*)    MACHINE=macos;;
+      mingw*)     MACHINE=windows;;
+  esac
+
   # Check if docker-compose.yml exists
   if [ ! -e "${APP_PROJECT_PATH}/docker-compose.yml" ] && [ ! -e "${APP_PROJECT_PATH}/docker-compose.yaml" ]; then
     echo "Docker compose file not found."
@@ -13,21 +22,17 @@ load_env() {
   local env="${APP_PROJECT_PATH}/.env"
   local env_local="${APP_PROJECT_PATH}/.env.local"
 
-  # Check if the .env file exists
-  if [ ! -e "$env" ]; then
-    echo "Environment file $env not found"
-    return 1
-  fi
-
   # Set the default environment
   export SPECIFIED_ENV=dev
 
   # Load all variables as if they are exported
   set -a
 
-  # Load all .env variables
+  # Check and load if environment .env file exists
   # shellcheck source=.env
-  source "$env"
+  if [ -e "$env_local" ]; then
+    source "$env"
+  fi
 
   # Check and load if environment local .env file exists
   # shellcheck source=.env.local
@@ -58,6 +63,18 @@ load_env() {
   GID=$(id -g)
   export GID
   export UID
+  if [[ "$MACHINE" == "windows" ]]; then
+    CUID="1000"
+    CGID="1000"
+    CHOME="/home/app"
+  else
+    CUID="${UID}"
+    CGID="${GID}"
+    CHOME="${HOME}"
+  fi
+  export CUID
+  export CGID
+  export CHOME
 
   # Ensure composer home directory exists
   if [ -n "${COMPOSER_HOME_LOCAL}" ]; then
