@@ -63,7 +63,7 @@ load_env() {
   GID=$(id -g)
   export GID
   export UID
-  if [[ "$MACHINE" == "windows" ]]; then
+  if [[ "${MACHINE}" == "windows" ]]; then
     DC="winpty docker-compose"
     CUID="1000"
     CGID="1000"
