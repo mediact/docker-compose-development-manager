@@ -64,10 +64,12 @@ load_env() {
   export GID
   export UID
   if [[ "$MACHINE" == "windows" ]]; then
+    DC="winpty docker-compose"
     CUID="1000"
     CGID="1000"
     CHOME="/home/app"
   else
+    DC="docker-compose"
     CUID="${UID}"
     CGID="${GID}"
     CHOME="${HOME}"
@@ -120,7 +122,7 @@ run() {
   console() {
     local shell="console"
     [ "$1" != "" ] && shell=$1
-    docker-compose run \
+    $DC run \
       --rm \
       -u "$(id -u):$(id -g)" \
       --no-deps \
@@ -131,7 +133,7 @@ run() {
 
   # Turn off all containers or a specific container
   down() {
-    docker-compose down "$@"
+    $DC down "$@"
     return $?
   }
 
@@ -144,7 +146,7 @@ run() {
       echo "  service: Defaults to console"
       echo "Available services:"
       load_env
-      docker-compose ps --services | xargs echo " "
+      $DC ps --services | xargs echo " "
       return 0
     }
 
@@ -234,19 +236,19 @@ run() {
 
   # Pull latest images
   pull() {
-    docker-compose pull
+    $DC pull
     return $?
   }
 
   # Run a command
   run() {
-    docker-compose run console "$@"
+    $DC run console "$@"
     return $?
   }
 
   # Turn on all containers or a specific container
   up() {
-    docker-compose up -d "$@"
+    $DC up -d "$@"
     return $?
   }
 
