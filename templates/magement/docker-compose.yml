@@ -24,6 +24,7 @@ services:
       - MAGEMENT_ENV
       - MAGEMENT_SECRET
       - MYSQL_ROOT_PASSWORD
+      - "HOME=${CHOME}"
     volumes:
       - "${HOME}:${CHOME}"
       - ./:/var/www/html:rw
