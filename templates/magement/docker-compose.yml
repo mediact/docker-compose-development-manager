@@ -63,7 +63,7 @@ services:
       - ES_JAVA_OPTS=-Xms1g -Xmx1g
       - discovery.type=single-node
       - http.host=0.0.0.0
-      - transport.host=127.0.0.1
+      - transport.host=0.0.0.0
       - xpack.monitoring.enabled=false
       - xpack.security.enabled=false
       - xpack.watcher.enabled=false

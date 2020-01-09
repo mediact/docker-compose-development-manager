@@ -1,7 +1,3 @@
-#!/usr/bin/env bash
-
-# Create env.php file
-cat << EOT > app/etc/env.php
 <?php
 
 return [
@@ -131,4 +127,3 @@ return [
         ],
     ],
 ];
-EOT
