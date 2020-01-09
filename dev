@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # vim: et:sw=2:ts=2:ai
 
 # Load environment variables
@@ -118,6 +118,12 @@ load_env() {
 # Container for all supported commands
 run() {
 
+  # Turn on and attach to specified container
+  attach() {
+    $DC up "$1"
+    return $?
+  }
+
   # Open the shell of a container
   console() {
     local shell="console"
@@ -139,6 +145,12 @@ run() {
 
   # Get help for commands
   help() {
+    attach() {
+      echo "Attach to a container."
+      echo "Usage: $0 attach <container-name>"
+      return 0
+    }
+
     console() {
       echo "Open up a console on a service."
       echo "Usage: $0 console [service]"
@@ -272,7 +284,7 @@ main() {
     exit 1
   fi
   # Initialize primary variables
-  APP_SELF_PATH=$(dirname "$0")
+  APP_SELF_PATH=$(dirname $(realpath "$0"))
   APP_PROJECT_PATH=$(pwd)
   APP_PROJECT=$(basename "${APP_SELF_PATH}")
 
