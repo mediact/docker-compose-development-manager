@@ -9,7 +9,7 @@ volumes:
 
 services:
   console:
-    image: eu.gcr.io/aequalis-io/php-image:latest
+    image: eu.gcr.io/aequalis-io/php-image
     user: "${CUID}:${CGID}"
     links:
       - db
@@ -24,16 +24,19 @@ services:
       - MAGEMENT_SECRET
       - MYSQL_ROOT_PASSWORD
       - "HOME=${CHOME}"
+      - SSH_AUTH_SOCK
+    working_dir: "${PWD}"
     volumes:
+      - "${PWD}:${PWD}:rw"
       - "${HOME}:${CHOME}"
-      - ./:/var/www/html:rw
+      - "${SSH_AUTH_SOCK}:${SSH_AUTH_SOCK}"
       - "${GIT_CONFIG_LOCAL}:/etc/gitconfig:ro"
       - /etc/group:/etc/group:ro
       - /etc/passwd:/etc/passwd:ro
       - /etc/shadow:/etc/shadow:ro
 
   dashboard:
-    image: eu.gcr.io/aequalis-io/magement-dashboard:latest
+    image: eu.gcr.io/aequalis-io/magement-dashboard
     links:
       - web
       - elasticsearch
@@ -70,7 +73,7 @@ services:
       - es-data:/usr/share/elasticsearch/data:rw
 
   filebeat:
-    image: eu.gcr.io/aequalis-io/filebeat-image:latest
+    image: eu.gcr.io/aequalis-io/filebeat-image
     network_mode: bridge
     command: filebeat -e -strict.perms=false
     environment:
@@ -116,7 +119,7 @@ services:
     network_mode: bridge
 
   web:
-    image: eu.gcr.io/aequalis-io/nginx-image:latest
+    image: eu.gcr.io/aequalis-io/nginx-image
     links:
       - mailcatch
       - worker
@@ -125,12 +128,13 @@ services:
       - "${MAGEMENT_PORT}:80"
     environment:
       - PHP_FPM_HOST=worker:9000
+    working_dir: "${PWD}/web"
     volumes:
-      - ./web:/var/www/html/web:ro
+      - "${PWD}/web:${PWD}/web:ro"
       - web-logs:/var/log/nginx:rw
 
   worker:
-    image: eu.gcr.io/aequalis-io/php-fpm-image:latest
+    image: eu.gcr.io/aequalis-io/php-fpm-image
     user: "${CUID}:${CGID}"
     links:
       - db
@@ -145,8 +149,9 @@ services:
       - MAGEMENT_ENV
       - MAGEMENT_SECRET
       - PHP_EXTRA_CONFIGURE_ARGS
+    working_dir: "${PWD}"
     volumes:
-      - ./:/var/www/html:rw
+      - "${PWD}:${PWD}:rw"
       - /etc/group:/etc/group:ro
       - /etc/passwd:/etc/passwd:ro
       - /etc/shadow:/etc/shadow:ro

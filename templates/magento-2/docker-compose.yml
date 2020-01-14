@@ -13,6 +13,7 @@ x-custom:
     - "HOME=${CHOME}"
     - COMPOSER_MEMORY_LIMIT
     - XDEBUG_CONFIG
+    - SSH_AUTH_SOCK
     # Database settings
     - DB_HOST
     - DB_USER
@@ -146,6 +147,7 @@ services:
       - "${PWD}:${PWD}"
       - "${GCLOUD_LOCAL}:/config/mygcloud"
       - "${GIT_CONFIG_LOCAL}:/etc/gitconfig:ro"
+      - "${SSH_AUTH_SOCK}:${SSH_AUTH_SOCK}"
       - /etc/group:/etc/group:ro
       - /etc/passwd:/etc/passwd:ro
       - /etc/shadow:/etc/shadow:ro
