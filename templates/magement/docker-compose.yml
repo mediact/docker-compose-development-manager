@@ -15,11 +15,10 @@ services:
       - db
       - elasticsearch
       - mailcatch
-    ports:
-      - "${XDEBUG_PORT_CONSOLE}:9001"
     network_mode: bridge
     environment:
       - COMPOSER_MEMORY_LIMIT=-1
+      - XDEBUG_CONFIG
       - DATABASE_URL
       - MAGEMENT_ENV
       - MAGEMENT_SECRET
@@ -137,10 +136,9 @@ services:
       - db
       - elasticsearch
       - mailcatch
-    ports:
-      - "${XDEBUG_PORT_WORKER}:9002"
     network_mode: bridge
     environment:
+      - XDEBUG_CONFIG
       - DATABASE_URL
       - GOOGLE_OAUTH_CLIENT_ID
       - GOOGLE_OAUTH_CLIENT_SECRET
