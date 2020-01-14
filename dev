@@ -24,7 +24,10 @@ load_env() {
 
   # Set the default environment
   export SPECIFIED_ENV=dev
-  export HOST_IP=$(ip -4 addr show docker0 | grep -Po 'inet \K[\d.]+')
+
+  HOST_IP=$(ip -4 addr show docker0 | grep -Po 'inet \K[\d.]+')
+  export HOST_IP
+  export SSH_AUTH_SOCK
 
   # Load all variables as if they are exported
   set -a
