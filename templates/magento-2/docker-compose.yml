@@ -12,6 +12,7 @@ x-custom:
     # Environment settings
     - "HOME=${CHOME}"
     - COMPOSER_MEMORY_LIMIT
+    - XDEBUG_CONFIG
     # Database settings
     - DB_HOST
     - DB_USER
@@ -136,9 +137,7 @@ services:
       - elasticsearch
       - mailcatch
       - redis
-#      - varnish
-    ports:
-      - "${XDEBUG_PORT_CONSOLE}:9001"
+    #      - varnish
     network_mode: bridge
     environment: *env-vars
     working_dir: "${PWD}"
@@ -206,15 +205,15 @@ services:
     image: redis:5.0-alpine
     network_mode: bridge
 
-#  varnish:
-#    image: emgag/varnish:5.2.1
-#    links:
-#      - web
-#    network_mode: bridge
-#    ports:
-#      - "${VARNISH_PORT}:80"
-#    volumes:
-#      - ./default.vcl.dev:/etc/varnish/default.vcl:ro
+  #  varnish:
+  #    image: emgag/varnish:5.2.1
+  #    links:
+  #      - web
+  #    network_mode: bridge
+  #    ports:
+  #      - "${VARNISH_PORT}:80"
+  #    volumes:
+  #      - ./default.vcl.dev:/etc/varnish/default.vcl:ro
 
   web:
     image: eu.gcr.io/mct-deployments/magento-2-nginx
@@ -241,8 +240,6 @@ services:
       - elasticsearch
       - mailcatch
       - redis
-    ports:
-      - "${XDEBUG_PORT_WORKER}:9002"
     network_mode: bridge
     environment: *env-vars
     working_dir: "${PWD}"
