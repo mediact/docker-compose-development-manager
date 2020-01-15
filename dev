@@ -128,8 +128,44 @@ run() {
     return $?
   }
 
+  # Check system and update if marked old
+  autoupdate() {
+    local cache_dir
+    local cache_limit
+    local cache_last
+
+    cache_dir="${HOME}/.cache/development-manager-docker-compose"
+    cache_limit="${HOME}/.cache/development-manager-docker-compose/limit"
+    cache_last="${HOME}/.cache/development-manager-docker-compose/$(pwd | base64)"
+
+    # Ensure cache directory exists
+    if [ ! -d "${cache_dir}" ]; then
+      mkdir -p "${cache_dir}"
+    fi
+
+    # Set limit of last check
+    touch -d '-16 hours' "${cache_limit}"
+
+    # Ensure a last check file exists
+    if [ ! -f "${cache_last}" ]; then
+      touch -d '-17 hours' "${cache_last}"
+    fi
+
+    # Check if the last check exceeds the given limit
+    if [ "${cache_limit}" -nt "${cache_last}" ]; then
+      touch "${cache_last}"
+      echo "Checking if new images are available ..."
+      # Run the pull command and download images if available
+      pull
+    fi
+
+    # Remove old cache files
+    find "${HOME}/.cache/development-manager-docker-compose" -type f -mtime +1 -delete
+  }
+
   # Open the shell of a container
   console() {
+    autoupdate
     local shell="console"
     [ "$1" != "" ] && shell=$1
     $DC run \
@@ -258,12 +294,14 @@ run() {
 
   # Run a command
   run() {
+    autoupdate
     $DC run console "$@"
     return $?
   }
 
   # Turn on all containers or a specific container
   up() {
+    autoupdate
     $DC up -d "$@"
     return $?
   }
