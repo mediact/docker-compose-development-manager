@@ -130,7 +130,7 @@ services:
       - RABBITMQ_DEFAULT_VHOST
 
   console:
-    image: eu.gcr.io/mct-deployments/magento-2-console
+    image: "eu.gcr.io/mct-deployments/magento-2-console:${PHP_VERSION}"
     user: "${UID}:${GID}"
     links:
       - amqp
@@ -185,7 +185,7 @@ services:
       - es-data:/usr/share/elasticsearch/data:rw
 
   grunt:
-    image: eu.gcr.io/mct-deployments/magento-2-console
+    image: "eu.gcr.io/mct-deployments/magento-2-console:${PHP_VERSION}"
     user: "${UID}:${GID}"
     links:
       - redis
@@ -234,7 +234,7 @@ services:
       - web-logs:/var/log/nginx:rw
 
   worker:
-    image: eu.gcr.io/mct-deployments/magento-2-php-fpm
+    image: "eu.gcr.io/mct-deployments/magento-2-php-fpm:${PHP_VERSION}"
     user: "${UID}:${GID}"
     links:
       - amqp
