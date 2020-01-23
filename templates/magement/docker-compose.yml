@@ -121,7 +121,6 @@ services:
   web:
     image: eu.gcr.io/aequalis-io/nginx-image
     links:
-      - mailcatch
       - worker
     network_mode: bridge
     ports:
