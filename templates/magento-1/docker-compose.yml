@@ -4,7 +4,6 @@ networks: {}
 volumes:
   db-data:
   db-logs:
-  es-data:
   web-logs:
 
 x-custom:
@@ -55,23 +54,13 @@ x-custom:
     - SESSION__REDIS__DATABASE
 
 services:
-  amqp:
-    image: rabbitmq:3.8-alpine
-    network_mode: bridge
-    environment:
-      - RABBITMQ_DEFAULT_USER
-      - RABBITMQ_DEFAULT_PASS
-      - RABBITMQ_DEFAULT_VHOST
-
   console:
-    image: eu.gcr.io/mct-deployments/magento-2-console:7.2
+    image: "eu.gcr.io/mct-deployments/magento-2-console:${PHP_VERSION}"
     user: "${UID}:${GID}"
     links:
-      - amqp
       - db
       - mailcatch
       - redis
-    #      - varnish
     network_mode: bridge
     environment: *env-vars
     working_dir: "${PWD}"
@@ -86,7 +75,7 @@ services:
       - /etc/shadow:/etc/shadow:ro
 
   db:
-    image: percona:5.7
+    image: percona:5.6
     environment:
       - MYSQL_ROOT_PASSWORD
     ports:
@@ -98,19 +87,6 @@ services:
       - /etc/group:/etc/group:ro
       - /etc/passwd:/etc/passwd:ro
       - /etc/shadow:/etc/shadow:ro
-
-  grunt:
-    image: eu.gcr.io/mct-deployments/magento-2-console
-    user: "${UID}:${GID}"
-    links:
-      - redis
-    network_mode: bridge
-    working_dir: "${PWD}"
-    command: grunt-daemon
-    environment: *env-vars
-    volumes:
-      - "${HOME}:${CHOME}"
-      - "${PWD}:${PWD}"
 
   mailcatch:
     image: mailhog/mailhog
@@ -139,10 +115,9 @@ services:
       - web-logs:/var/log/nginx:rw
 
   worker:
-    image: eu.gcr.io/mct-deployments/magento-2-php-fpm:7.2
+    image: "eu.gcr.io/mct-deployments/magento-2-php-fpm:${PHP_VERSION}"
     user: "${UID}:${GID}"
     links:
-      - amqp
       - db
       - mailcatch
       - redis
