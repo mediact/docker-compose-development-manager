@@ -214,7 +214,7 @@ run() {
       echo "Usage: $0 init [-f|--force] <project-type>"
       echo "Available project types: "
       for type in "${APP_SELF_PATH}"/templates/*; do
-        echo "- $(basename $type)"
+        echo "- $(basename "${type}")"
       done
     }
 
@@ -331,7 +331,7 @@ main() {
     exit 1
   fi
   # Initialize primary variables
-  APP_SELF_PATH=$(dirname $(realpath "$0"))
+  APP_SELF_PATH=$(dirname "$(realpath "$0")")
   APP_PROJECT_PATH=$(pwd)
   APP_PROJECT=$(basename "${APP_SELF_PATH}")
 
