@@ -1,0 +1,158 @@
+# vim: ai:ts=2:sw=2:et
+version: "3.4"
+networks: {}
+volumes:
+  db-data:
+  db-logs:
+  es-data:
+  web-logs:
+
+x-custom:
+  environment: &env-vars
+    # Environment settings
+    - "HOME=${CHOME}"
+    - COMPOSER_MEMORY_LIMIT
+    - XDEBUG_CONFIG
+    - SSH_AUTH_SOCK
+    # Database settings
+    - DB_HOST
+    - DB_USER
+    - DB_PASS
+    - DB_NAME
+    - MYSQL_PORT
+    # URL settings
+    # GCP settings
+    - CLOUDSDK_CONFIG=/config/mygcloud
+    - GCLOUD_BUCKET_URL_DB
+    - GCLOUD_BUCKET_URL_MEDIA
+    # Magento settings
+    - BACKEND__FRONT_NAME
+    - CRYPT__KEY
+    - CACHE__FRONTEND__DEFAULT__BACKEND_OPTIONS__HOST
+    - CACHE__FRONTEND__DEFAULT__BACKEND_OPTIONS__PORT
+    - CACHE__FRONTEND__DEFAULT__BACKEND_OPTIONS__PASSWORD
+    - CACHE__FRONTEND__DEFAULT__BACKEND_OPTIONS__DATABASE
+    - CACHE__FRONTEND__PAGE_CACHE__BACKEND_OPTIONS__HOST
+    - CACHE__FRONTEND__PAGE_CACHE__BACKEND_OPTIONS__PORT
+    - CACHE__FRONTEND__PAGE_CACHE__BACKEND_OPTIONS__PASSWORD
+    - CACHE__FRONTEND__PAGE_CACHE__BACKEND_OPTIONS__DATABASE
+    - DB__CONNECTION__DEFAULT__HOST
+    - DB__CONNECTION__DEFAULT__DBNAME
+    - DB__CONNECTION__DEFAULT__USERNAME
+    - DB__CONNECTION__DEFAULT__PASSWORD
+    - DB__CONNECTION__INDEXER__HOST
+    - DB__CONNECTION__INDEXER__DBNAME
+    - DB__CONNECTION__INDEXER__USERNAME
+    - DB__CONNECTION__INDEXER__PASSWORD
+    - QUEUE__AMQP__HOST
+    - QUEUE__AMQP__PORT
+    - QUEUE__AMQP__USER
+    - QUEUE__AMQP__PASSWORD
+    - QUEUE__AMQP__VIRTUALHOST
+    - SESSION__REDIS__HOST
+    - SESSION__REDIS__PORT
+    - SESSION__REDIS__PASSWORD
+    - SESSION__REDIS__DATABASE
+
+services:
+  amqp:
+    image: rabbitmq:3.8-alpine
+    network_mode: bridge
+    environment:
+      - RABBITMQ_DEFAULT_USER
+      - RABBITMQ_DEFAULT_PASS
+      - RABBITMQ_DEFAULT_VHOST
+
+  console:
+    image: eu.gcr.io/mct-deployments/magento-2-console:7.2
+    user: "${UID}:${GID}"
+    links:
+      - amqp
+      - db
+      - mailcatch
+      - redis
+    #      - varnish
+    network_mode: bridge
+    environment: *env-vars
+    working_dir: "${PWD}"
+    volumes:
+      - "${HOME}:${CHOME}"
+      - "${PWD}:${PWD}"
+      - "${GCLOUD_LOCAL}:/config/mygcloud"
+      - "${GIT_CONFIG_LOCAL}:/etc/gitconfig:ro"
+      - "${SSH_AUTH_SOCK}:${SSH_AUTH_SOCK}"
+      - /etc/group:/etc/group:ro
+      - /etc/passwd:/etc/passwd:ro
+      - /etc/shadow:/etc/shadow:ro
+
+  db:
+    image: percona:5.7
+    environment:
+      - MYSQL_ROOT_PASSWORD
+    ports:
+      - "${MYSQL_PORT}:3306"
+    network_mode: bridge
+    volumes:
+      - db-data:/var/lib/mysql:rw
+      - db-logs:/var/logs/mysql:rw
+      - /etc/group:/etc/group:ro
+      - /etc/passwd:/etc/passwd:ro
+      - /etc/shadow:/etc/shadow:ro
+
+  grunt:
+    image: eu.gcr.io/mct-deployments/magento-2-console
+    user: "${UID}:${GID}"
+    links:
+      - redis
+    network_mode: bridge
+    working_dir: "${PWD}"
+    command: grunt-daemon
+    environment: *env-vars
+    volumes:
+      - "${HOME}:${CHOME}"
+      - "${PWD}:${PWD}"
+
+  mailcatch:
+    image: mailhog/mailhog
+    network_mode: bridge
+    ports:
+      - "${MAILHOG_PORT}:8025"
+
+  redis:
+    image: redis:5.0-alpine
+    network_mode: bridge
+
+  web:
+    image: eu.gcr.io/mct-deployments/magento-2-nginx
+    links:
+      - worker
+    network_mode: bridge
+    ports:
+      - "${WEB_PORT_HTTP}:80"
+      - "${WEB_PORT_HTTPS}:443"
+    environment:
+      - PHP_FPM_HOST=worker:9000
+    working_dir: "${PWD}"
+    volumes:
+      - "${PWD}:${PWD}:ro"
+      - ./nginx-dev.conf:/etc/nginx/dev.conf:ro
+      - web-logs:/var/log/nginx:rw
+
+  worker:
+    image: eu.gcr.io/mct-deployments/magento-2-php-fpm:7.2
+    user: "${UID}:${GID}"
+    links:
+      - amqp
+      - db
+      - mailcatch
+      - redis
+    network_mode: bridge
+    environment: *env-vars
+    working_dir: "${PWD}"
+    volumes:
+      - "${PWD}:${PWD}:rw"
+      - "${PWD}/var/log:/var/log/:rw"
+      - /etc/group:/etc/group:ro
+      - /etc/passwd:/etc/passwd:ro
+      - /etc/shadow:/etc/shadow:ro
+
