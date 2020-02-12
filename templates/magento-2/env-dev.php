@@ -66,7 +66,6 @@ return [
         ]
     ],
     'x-frame-options' => 'SAMEORIGIN',
-    'MAGE_MODE' => getenv('MAGE_MODE'),
     'cache_types' => [
         'config' => 1,
         'layout' => 1,
