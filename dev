@@ -183,6 +183,12 @@ run() {
     return $?
   }
 
+  # Execute a command on a specified container
+  exec() {
+    $DC exec "$@"
+    return $?
+  }
+
   # Get help for commands
   help() {
     attach() {
@@ -206,6 +212,13 @@ run() {
       echo "Turn off development environment."
       echo "Usage: $0 down [options...]"
       echo "For more info, see: docker-compose help down"
+      return 0
+    }
+
+    exec() {
+      echo "Execute a command on a specified container"
+      echo "Usage: $0 exec <container> <command> [options...]"
+      echo "Example: $0 dev exec redis redis-cli flushall"
       return 0
     }
 
