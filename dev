@@ -12,12 +12,6 @@ load_env() {
       mingw*)     MACHINE=windows;;
   esac
 
-  # Check if docker-compose.yml exists
-  if [ ! -e "${APP_PROJECT_PATH}/docker-compose.yml" ] && [ ! -e "${APP_PROJECT_PATH}/docker-compose.yaml" ]; then
-    echo "Docker compose file not found."
-    return 1
-  fi
-
   # Configure .env files
   local env="${APP_PROJECT_PATH}/.env"
   local env_local="${APP_PROJECT_PATH}/.env.local"
@@ -130,6 +124,12 @@ run() {
 
   # Check system and update if marked old
   autoupdate() {
+    # shellcheck disable=SC2164
+    pushd "${APP_SELF_PATH}" > /dev/null
+    git pull origin master
+    # shellcheck disable=SC2164
+    popd > /dev/null
+
     local cache_dir
     local cache_limit
     local cache_last
@@ -168,6 +168,7 @@ run() {
     autoupdate
     local shell="console"
     [ "$1" != "" ] && shell=$1
+
     $DC run \
       --rm \
       -u "$(id -u):$(id -g)" \
