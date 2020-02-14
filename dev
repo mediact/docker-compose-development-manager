@@ -260,6 +260,7 @@ run() {
       echo "The following options are available"
       echo "  console: Open the console"
       echo "  down: Stop the environment"
+      echo "  exec: Execute a command on a container"
       echo "  pull: Pull latest images"
       echo "  run: Run a command"
       echo "  up: Start the environment"
