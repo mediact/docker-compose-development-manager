@@ -186,25 +186,6 @@ services:
     volumes:
       - es-data:/usr/share/elasticsearch/data:rw
 
-  grunt:
-    image: "eu.gcr.io/mct-deployments/magento-2-console:${PHP_VERSION}"
-    user: "${UID}:${GID}"
-    links:
-      - redis
-    network_mode: bridge
-    working_dir: "${PWD}"
-    command: grunt-daemon
-    environment: *env-vars
-    volumes:
-      - "${HOME}:${CHOME}"
-      - "${PWD}:${PWD}"
-
-  mailcatch:
-    image: mailhog/mailhog
-    network_mode: bridge
-    ports:
-      - "${MAILHOG_PORT}:8025"
-
   redis:
     image: redis:5.0-alpine
     network_mode: bridge
