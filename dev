@@ -21,6 +21,11 @@ load_env() {
 
   HOST_IP=$(ip -4 addr show docker0 | grep -Po 'inet \K[\d.]+')
   export HOST_IP
+
+  if [[ "$SSH_AUTH_SOCK" == "" ]]; then
+    SSH_AUTH_SOCK="/tmp/.ssh-sock"
+    ssh-agent -a "${SSH_AUTH_SOCK}"
+  fi
   export SSH_AUTH_SOCK
 
   # Load all variables as if they are exported
