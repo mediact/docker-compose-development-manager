@@ -124,13 +124,6 @@ run() {
 
   # Check system and update if marked old
   autoupdate() {
-    # shellcheck disable=SC2164
-    pushd "${APP_SELF_PATH}" > /dev/null
-    git pull origin master
-    chmod +x "$0"
-    # shellcheck disable=SC2164
-    popd > /dev/null
-
     local cache_dir
     local cache_limit
     local cache_last
@@ -155,6 +148,14 @@ run() {
     # Check if the last check exceeds the given limit
     if [ "${cache_limit}" -nt "${cache_last}" ]; then
       touch "${cache_last}"
+
+      # shellcheck disable=SC2164
+      pushd "${APP_SELF_PATH}" > /dev/null
+      git pull origin master
+      chmod +x "$0"
+      # shellcheck disable=SC2164
+      popd > /dev/null
+
       echo "Checking if new images are available ..."
       # Run the pull command and download images if available
       pull
