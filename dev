@@ -19,7 +19,13 @@ load_env() {
   # Set the default environment
   export SPECIFIED_ENV=dev
 
-  HOST_IP=$(ip -4 addr show docker0 | grep -Po 'inet \K[\d.]+')
+  if [[ "${MACHINE}" == "windows" ]]; then
+    HOST_IP=host.docker.internal
+  elif [[ "${MACHINE}" == "macos" ]]; then
+    HOST_IP=host.docker.internal
+  else
+    HOST_IP=$(ip -4 addr show docker0 | grep -Po 'inet \K[\d.]+')
+  fi
   export HOST_IP
 
   if [[ "$SSH_AUTH_SOCK" == "" ]]; then
