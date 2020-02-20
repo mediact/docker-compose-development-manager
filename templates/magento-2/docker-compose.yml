@@ -186,6 +186,12 @@ services:
     volumes:
       - es-data:/usr/share/elasticsearch/data:rw
 
+  mailcatch:
+    image: mailhog/mailhog
+    network_mode: bridge
+    ports:
+      - "${MAILHOG_PORT}:8025"
+
   redis:
     image: redis:5.0-alpine
     network_mode: bridge
