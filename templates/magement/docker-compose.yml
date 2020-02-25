@@ -73,7 +73,7 @@ services:
       - es-data:/usr/share/elasticsearch/data:rw
 
   filebeat:
-    image: eu.gcr.io/aequalis-io/filebeat-image
+    image: eu.gcr.io/aequalis-io/magement-filebeat
     network_mode: bridge
     command: filebeat -e -strict.perms=false
     environment:
@@ -119,7 +119,7 @@ services:
     network_mode: bridge
 
   web:
-    image: eu.gcr.io/aequalis-io/nginx-image
+    image: eu.gcr.io/aequalis-io/magement-nginx
     links:
       - worker
     network_mode: bridge
