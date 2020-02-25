@@ -9,7 +9,7 @@ volumes:
 
 services:
   console:
-    image: eu.gcr.io/aequalis-io/php-image
+    image: eu.gcr.io/aequalis-io/magement-console
     user: "${CUID}:${CGID}"
     links:
       - db
@@ -133,7 +133,7 @@ services:
       - web-logs:/var/log/nginx:rw
 
   worker:
-    image: eu.gcr.io/aequalis-io/php-fpm-image
+    image: eu.gcr.io/aequalis-io/magement-php-fpm
     user: "${CUID}:${CGID}"
     links:
       - db
