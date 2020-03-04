@@ -186,8 +186,7 @@ run() {
       --rm \
       -u "$(id -u):$(id -g)" \
       --no-deps \
-      "$shell" \
-      sh -l
+      "$shell"
     return $?
   }
 
