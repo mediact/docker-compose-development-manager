@@ -250,6 +250,12 @@ run() {
       done
     }
 
+    ps() {
+      echo "Display container status for current project"
+      echo "Usage: $0 ps"
+      return 0
+    }
+
     pull() {
       echo "Pull latest development environment images."
       echo "Usage: $0 pull"
@@ -279,6 +285,7 @@ run() {
       echo "  console: Open the console"
       echo "  down: Stop the environment"
       echo "  exec: Execute a command on a container"
+      echo "  ps: Display container status"
       echo "  pull: Pull latest images"
       echo "  run: Run a command"
       echo "  up: Start the environment"
@@ -322,6 +329,12 @@ run() {
     fi
     run help init
     exit 1
+  }
+
+  # Show container status
+  ps() {
+    $DC ps
+    return $?
   }
 
   # Pull latest images
