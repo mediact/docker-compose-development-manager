@@ -190,6 +190,12 @@ run() {
     return $?
   }
 
+  # Run a Docker Compose command
+  dc() {
+    $DC "$@"
+    return $?
+  }
+
   # Turn off all containers or a specific container
   down() {
     $DC down "$@"
