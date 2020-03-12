@@ -355,8 +355,9 @@ main() {
     exit 1
   fi
 
-  if grep -c docker /proc/1/cgroup; then
+  if grep -c docker /proc/1/cgroup > /dev/null; then
     echo "This script should not be run from a docker container."
+    exit 1
   fi
 
   # Run the tool
