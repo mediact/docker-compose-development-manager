@@ -19,6 +19,7 @@ load_env() {
   # Set the default environment
   export SPECIFIED_ENV=dev
 
+  # Ensure the docker host is accessible
   if [[ "${MACHINE}" == "windows" ]]; then
     HOST_IP=host.docker.internal
   elif [[ "${MACHINE}" == "macos" ]]; then
@@ -28,6 +29,7 @@ load_env() {
   fi
   export HOST_IP
 
+  # Ensure an SSH socket is available
   if [[ "$SSH_AUTH_SOCK" == "" ]]; then
     SSH_AUTH_SOCK="/tmp/.ssh-sock"
     ssh-agent -a "${SSH_AUTH_SOCK}"
@@ -86,46 +88,15 @@ load_env() {
   export CUID
   export CGID
   export CHOME
-
-  # Ensure composer home directory exists
-  if [ -n "${COMPOSER_HOME_LOCAL}" ]; then
-    eval COMPOSER_HOME_LOCAL="$COMPOSER_HOME_LOCAL"
-    if [ ! -d "${COMPOSER_HOME_LOCAL}" ]; then
-      mkdir -p "${COMPOSER_HOME_LOCAL}"
-    fi
-    export COMPOSER_HOME_LOCAL
-  fi
-
-  # Ensure Git configuration file exists
-  if [ -n "${GIT_CONFIG_LOCAL}" ]; then
-    eval GIT_CONFIG_LOCAL="$GIT_CONFIG_LOCAL"
-    if [ ! -e "${GIT_CONFIG_LOCAL}" ]; then
-      touch "${GIT_CONFIG_LOCAL}"
-    fi
-    export GIT_CONFIG_LOCAL
-  fi
-
-  # Ensure Git ignore file exists
-  if [ -n "${GIT_IGNORE_LOCAL}" ]; then
-    eval GIT_IGNORE_LOCAL="$GIT_IGNORE_LOCAL"
-    if [ ! -e "${GIT_IGNORE_LOCAL}" ]; then
-      touch "${GIT_IGNORE_LOCAL}"
-    fi
-    export GIT_IGNORE_LOCAL
-  fi
-
-  # Ensure SSH directory exists
-  if [ -n "${SSH_LOCAL}" ]; then
-    eval SSH_LOCAL="$SSH_LOCAL"
-    if [ ! -d "${SSH_LOCAL}" ]; then
-      mkdir -p "${SSH_LOCAL}"
-    fi
-    export SSH_LOCAL
-  fi
 }
 
 # Container for all supported commands
 run() {
+
+  # Initialize primary variables
+  APP_SELF_PATH=$(dirname "$(realpath "$0")")
+  APP_PROJECT_PATH=$(pwd)
+  APP_PROJECT=$(basename "${APP_SELF_PATH}")
 
   # Turn on and attach to specified container
   attach() {
@@ -137,28 +108,42 @@ run() {
   autoupdate() {
     local cache_dir
     local cache_limit
-    local cache_last
+    local cache_project
+    local cache_tool
 
     cache_dir="${HOME}/.cache/development-manager-docker-compose"
-    cache_limit="${HOME}/.cache/development-manager-docker-compose/limit"
-    cache_last="${HOME}/.cache/development-manager-docker-compose/$(pwd | base64)"
+    cache_limit="${cache_dir}/limit"
+    cache_project="${cache_dir}/$(pwd | base64)"
+    cache_tool="${cache_dir}/dev"
 
     # Ensure cache directory exists
-    if [ ! -d "${cache_dir}" ]; then
-      mkdir -p "${cache_dir}"
-    fi
+    test ! -d "${cache_dir}" && mkdir -p "${cache_dir}"
+
+    # Remove old cache files
+    find "${cache_dir}" -type f -mtime +1 -delete
 
     # Set limit of last check
     touch -d '-16 hours' "${cache_limit}"
 
     # Ensure a last check file exists
-    if [ ! -f "${cache_last}" ]; then
-      touch -d '-17 hours' "${cache_last}"
+    test ! -f "${cache_project}" && touch -d '-17 hours' "${cache_project}"
+
+    # Ensure a last check file exists
+    test ! -f "${cache_tool}" && touch -d '-17 hours' "${cache_tool}"
+
+    # Check if the last check exceeds the given limit
+    if [ "${cache_limit}" -nt "${cache_project}" ]; then
+      touch "${cache_project}"
+
+      echo "Checking if new images are available ..."
+
+      # Run the pull command and download images if available
+      pull
     fi
 
     # Check if the last check exceeds the given limit
-    if [ "${cache_limit}" -nt "${cache_last}" ]; then
-      touch "${cache_last}"
+    if [ "${cache_limit}" -nt "${cache_tool}" ]; then
+      touch "${cache_tool}"
 
       # shellcheck disable=SC2164
       pushd "${APP_SELF_PATH}" > /dev/null
@@ -166,14 +151,7 @@ run() {
       chmod +x "$0"
       # shellcheck disable=SC2164
       popd > /dev/null
-
-      echo "Checking if new images are available ..."
-      # Run the pull command and download images if available
-      pull
     fi
-
-    # Remove old cache files
-    find "${HOME}/.cache/development-manager-docker-compose" -type f -mtime +1 -delete
   }
 
   # Open the shell of a container
@@ -376,10 +354,10 @@ main() {
     echo "This script should not be run as root."
     exit 1
   fi
-  # Initialize primary variables
-  APP_SELF_PATH=$(dirname "$(realpath "$0")")
-  APP_PROJECT_PATH=$(pwd)
-  APP_PROJECT=$(basename "${APP_SELF_PATH}")
+
+  if grep -c docker /proc/1/cgroup; then
+    echo "This script should not be run from a docker container."
+  fi
 
   # Run the tool
   run "$@"
