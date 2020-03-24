@@ -18,28 +18,28 @@ services:
     network_mode: bridge
     environment:
       - COMPOSER_MEMORY_LIMIT=-1
-      - XDEBUG_CONFIG
       - DATABASE_URL
+      - "HOME=${CHOME}"
       - MAGEMENT_ENV
       - MAGEMENT_SECRET
       - MYSQL_ROOT_PASSWORD
-      - "HOME=${CHOME}"
+      - ELASTICSEARCH_USERNAME
+      - ELASTICSEARCH_PASSWORD
+      - ELASTICSEARCH_INSTANCE_URL=http://elasticsearch:9200
+      - ELASTICSEARCH_INDEX=filebeat-*
       - SSH_AUTH_SOCK
+      - XDEBUG_CONFIG
     working_dir: "${PWD}"
     volumes:
-      - "${PWD}:${PWD}:rw"
       - "${HOME}:${CHOME}"
+      - "${PWD}:${PWD}"
       - "${SSH_AUTH_SOCK}:${SSH_AUTH_SOCK}"
-      - "${GIT_CONFIG_LOCAL}:/etc/gitconfig:ro"
       - /etc/group:/etc/group:ro
       - /etc/passwd:/etc/passwd:ro
       - /etc/shadow:/etc/shadow:ro
 
   dashboard:
     image: eu.gcr.io/aequalis-io/magement-dashboard
-    links:
-      - web
-      - elasticsearch
     ports:
       - "${DASHBOARD_PORT}:80"
     network_mode: bridge
@@ -57,10 +57,9 @@ services:
 
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:7.3.1
-    ports:
-      - "${ELASTICSEARCH_PORT}:9200"
     network_mode: bridge
     environment:
+      - ELASTICSEARCH_USERNAME
       - ELASTICSEARCH_PASSWORD
       - ES_JAVA_OPTS=-Xms1g -Xmx1g
       - discovery.type=single-node
@@ -77,14 +76,13 @@ services:
     network_mode: bridge
     command: filebeat -e -strict.perms=false
     environment:
-      - ELASTICSEARCH_HOST
+      - ELASTICSEARCH_HOST=http://elasticsearch:9200
       - ELASTICSEARCH_USERNAME
       - ELASTICSEARCH_PASSWORD
       - KIBANA_HOST=kibana
     links:
       - db
       - elasticsearch
-      - logstash
       - web
       - worker
     volumes:
@@ -100,19 +98,8 @@ services:
       - "${KIBANA_PORT}:5601"
     network_mode: bridge
     environment:
-      ELASTIC_PASSWORD: "${ELASTICSEARCH_PASSWORD}"
-      SERVER_NAME: kibana
-      ELASTICSEARCH_HOSTS: "${ELASTICSEARCH_INSTANCE_URL}"
-
-  logstash:
-    image: docker.elastic.co/logstash/logstash:7.3.1
-    links:
-      - elasticsearch
-    network_mode: bridge
-    environment:
-      ES_URL: "${ELASTICSEARCH_NODES_URL}"
-      ELASTIC_PASSWORD: "${ELASTICSEARCH_PASSWORD}"
-      LS_JAVA_OPTS: "-Xmx256m -Xms256m"
+      - ELASTICSEARCH_PASSWORD
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
 
   mailcatch:
     image: mailhog/mailhog
@@ -127,7 +114,6 @@ services:
       - "${MAGEMENT_PORT}:80"
     environment:
       - PHP_FPM_HOST=worker:9000
-    working_dir: "${PWD}"
     volumes:
       - "${PWD}/web:${PWD}/web:ro"
       - web-logs:/var/log/nginx:rw
@@ -141,13 +127,17 @@ services:
       - mailcatch
     network_mode: bridge
     environment:
-      - XDEBUG_CONFIG
       - DATABASE_URL
       - GOOGLE_OAUTH_CLIENT_ID
       - GOOGLE_OAUTH_CLIENT_SECRET
       - MAGEMENT_ENV
       - MAGEMENT_SECRET
       - PHP_EXTRA_CONFIGURE_ARGS
+      - ELASTICSEARCH_USERNAME
+      - ELASTICSEARCH_PASSWORD
+      - ELASTICSEARCH_INSTANCE_URL=http://elasticsearch:9200
+      - ELASTICSEARCH_INDEX=filebeat-*
+      - XDEBUG_CONFIG
     working_dir: "${PWD}"
     volumes:
       - "${PWD}:${PWD}:rw"
