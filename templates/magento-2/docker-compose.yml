@@ -11,7 +11,7 @@ x-custom:
   environment: &env-vars
     # Environment settings
     - "HOME=${CHOME}"
-    - COMPOSER_MEMORY_LIMIT
+    - COMPOSER_MEMORY_LIMIT=-1
     - XDEBUG_CONFIG
     - SSH_AUTH_SOCK
     # Database settings
