@@ -1,6 +1,33 @@
 #!/usr/bin/env bash
 # vim: et:sw=2:ts=2:ai
 
+# Ensure realpath is available
+if ! which realpath > /dev/null; then
+  realpath() {
+    local orig_pwd
+    local new_pwd
+    local real_pwd
+
+    orig_pwd=$(pwd)
+
+    # shellcheck disable=SC2164
+    cd "$(dirname "$1")"
+
+    new_pwd=$(readlink "$(basename "$1")")
+    while [ "$new_pwd" ]; do
+      # shellcheck disable=SC2164
+      cd "$(dirname "$new_pwd")"
+      new_pwd=$(readlink "$(basename "$1")")
+    done
+
+    real_pwd="$(pwd)/$(basename "$1")"
+    # shellcheck disable=SC2164
+    cd "$orig_pwd"
+
+    echo "$real_pwd"
+  }
+fi
+
 # Load environment variables
 load_env() {
   # We use "tr" to translate the uppercase "uname" output into lowercase
@@ -11,6 +38,19 @@ load_env() {
       darwin*)    MACHINE=macos;;
       mingw*)     MACHINE=windows;;
   esac
+  export MACHINE
+
+  # OSX requires coreutils
+  if [[ "${MACHINE}" == "macos" ]] && ! which gtouch > /dev/null; then
+    echo "Required tools are missing, please run: brew install coreutils"
+    exit 1
+  fi
+
+  if [[ "${MACHINE}" == "macos" ]]; then
+    touch() {
+      gtouch "$@"
+    }
+  fi
 
   # Configure .env files
   local env="${APP_PROJECT_PATH}/.env"
@@ -145,12 +185,8 @@ run() {
     if [ "${cache_limit}" -nt "${cache_tool}" ]; then
       touch "${cache_tool}"
 
-      # shellcheck disable=SC2164
-      pushd "${APP_SELF_PATH}" > /dev/null
-      git pull origin master
-      chmod +x "$0"
-      # shellcheck disable=SC2164
-      popd > /dev/null
+      # Run the self update command
+      selfupdate
     fi
   }
 
@@ -246,6 +282,12 @@ run() {
       return 0
     }
 
+    selfupdate() {
+      echo "Run self update."
+      echo "Usage: $0 selfupdate"
+      return 0
+    }
+
     up() {
       echo "Turn on development environment."
       echo "Usage: $0 up [options...]"
@@ -266,6 +308,7 @@ run() {
       echo "  ps: Display container status"
       echo "  pull: Pull latest images"
       echo "  run: Run a command"
+      echo "  selfupdate: Run self update"
       echo "  up: Start the environment"
     fi
     return $?
@@ -328,6 +371,16 @@ run() {
     return $?
   }
 
+  # Try to self update
+  selfupdate() {
+    # shellcheck disable=SC2164
+    pushd "${APP_SELF_PATH}" > /dev/null
+    git pull origin master
+    chmod +x "$0"
+    # shellcheck disable=SC2164
+    popd > /dev/null
+  }
+
   # Turn on all containers or a specific container
   up() {
     autoupdate
@@ -355,7 +408,8 @@ main() {
     exit 1
   fi
 
-  if grep -c docker /proc/1/cgroup > /dev/null; then
+  # Ensure this is not executed from a docker container
+  if [[ -e /proc/1/cgroup ]] && grep -c docker /proc/1/cgroup > /dev/null; then
     echo "This script should not be run from a docker container."
     exit 1
   fi
