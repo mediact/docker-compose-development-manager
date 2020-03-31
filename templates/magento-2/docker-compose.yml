@@ -3,9 +3,7 @@ version: "3.4"
 networks: {}
 volumes:
   db-data:
-  db-logs:
   es-data:
-  web-logs:
 
 x-custom:
   environment: &env-vars
@@ -134,7 +132,7 @@ services:
 
   console:
     image: "eu.gcr.io/mct-deployments/magento-2-console:${PHP_VERSION}"
-    user: "${UID}:${GID}"
+    user: "${CUID}:${CGID}"
     links:
       - amqp
       - db
@@ -149,7 +147,6 @@ services:
       - "${HOME}:${CHOME}"
       - "${PWD}:${PWD}"
       - "${GCLOUD_LOCAL}:/config/mygcloud"
-      - "${GIT_CONFIG_LOCAL}:/etc/gitconfig:ro"
       - "${SSH_AUTH_SOCK}:${SSH_AUTH_SOCK}"
       - /etc/group:/etc/group:ro
       - /etc/passwd:/etc/passwd:ro
@@ -164,7 +161,6 @@ services:
     network_mode: bridge
     volumes:
       - db-data:/var/lib/mysql:rw
-      - db-logs:/var/logs/mysql:rw
       - /etc/group:/etc/group:ro
       - /etc/passwd:/etc/passwd:ro
       - /etc/shadow:/etc/shadow:ro
@@ -221,11 +217,10 @@ services:
     volumes:
       - "${PWD}:${PWD}:ro"
       - ./nginx-dev.conf:/etc/nginx/dev.conf:ro
-      - web-logs:/var/log/nginx:rw
 
   worker:
     image: "eu.gcr.io/mct-deployments/magento-2-php-fpm:${PHP_VERSION}"
-    user: "${UID}:${GID}"
+    user: "${CUID}:${CGID}"
     links:
       - amqp
       - db
@@ -237,7 +232,6 @@ services:
     working_dir: "${PWD}"
     volumes:
       - "${PWD}:${PWD}:rw"
-      - "${PWD}/var/log:/var/log/:rw"
       - /etc/group:/etc/group:ro
       - /etc/passwd:/etc/passwd:ro
       - /etc/shadow:/etc/shadow:ro
