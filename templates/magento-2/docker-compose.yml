@@ -216,6 +216,7 @@ services:
     working_dir: "${PWD}"
     volumes:
       - "${PWD}:${PWD}:ro"
+      - ./nginx-map-dev.conf:/etc/nginx/conf.d/map.conf:ro
       - ./nginx-dev.conf:/etc/nginx/dev.conf:ro
 
   worker:
