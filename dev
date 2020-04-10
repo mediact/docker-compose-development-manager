@@ -1,33 +1,6 @@
 #!/usr/bin/env bash
 # vim: et:sw=2:ts=2:ai
 
-# Ensure realpath is available
-if ! which realpath > /dev/null; then
-  realpath() {
-    local orig_pwd
-    local new_pwd
-    local real_pwd
-
-    orig_pwd=$(pwd)
-
-    # shellcheck disable=SC2164
-    cd "$(dirname "$1")"
-
-    new_pwd=$(readlink "$(basename "$1")")
-    while [ "$new_pwd" ]; do
-      # shellcheck disable=SC2164
-      cd "$(dirname "$new_pwd")"
-      new_pwd=$(readlink "$(basename "$1")")
-    done
-
-    real_pwd="$(pwd)/$(basename "$1")"
-    # shellcheck disable=SC2164
-    cd "$orig_pwd"
-
-    echo "$real_pwd"
-  }
-fi
-
 # Load environment variables
 load_env() {
   # We use "tr" to translate the uppercase "uname" output into lowercase
