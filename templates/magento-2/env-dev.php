@@ -97,6 +97,12 @@ return [
             'virtualhost' => getenv('QUEUE__AMQP__VIRTUALHOST'),
         ],
     ],
+    'http_cache_hosts' => [
+        0 => [
+            'host' => getenv('HTTPS_CACHE_HOSTS__0__HOST'),
+            'port' => getenv('HTTPS_CACHE_HOSTS__0__PORT'),
+        ],
+    ],
     'cache' => [
         'frontend' => [
             'default' => [
