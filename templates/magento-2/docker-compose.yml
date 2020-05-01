@@ -117,9 +117,6 @@ services:
       - MYSQL_ROOT_PASSWORD
     volumes:
       - db-data:/var/lib/mysql:rw
-      - /etc/group:/etc/group:ro
-      - /etc/passwd:/etc/passwd:ro
-      - /etc/shadow:/etc/shadow:ro
 
   elasticsearch:
     image: eu.gcr.io/mct-deployments/magento-2-elasticsearch
