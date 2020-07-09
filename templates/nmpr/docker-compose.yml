@@ -1,0 +1,80 @@
+# vim: ai:ts=2:sw=2:et
+version: "3.4"
+networks: {}
+volumes:
+  db-data:
+  db-logs:
+
+x-custom:
+  environment: &env-vars
+    # Environment settings
+    - "HOME=${CHOME}"
+    - COMPOSER_MEMORY_LIMIT
+    - XDEBUG_CONFIG
+    - SSH_AUTH_SOCK
+    # Database settings
+    - DB_HOST
+    - DB_USER
+    - DB_PASS
+    - DB_NAME
+    - MYSQL_PORT
+
+services:
+  console:
+    image: "chialab/php:${PHP_VERSION}"
+    command: sh
+    user: "${CUID}:${CGID}"
+    links:
+      - db
+      - redis
+    network_mode: bridge
+    environment: *env-vars
+    working_dir: "${PWD}"
+    volumes:
+      - "${HOME}:${CHOME}"
+      - "${PWD}:${PWD}"
+      - "${SSH_AUTH_SOCK}:${SSH_AUTH_SOCK}"
+      - /etc/group:/etc/group:ro
+      - /etc/passwd:/etc/passwd:ro
+      - /etc/shadow:/etc/shadow:ro
+
+  db:
+    image: percona:5.7
+    environment:
+      - MYSQL_ROOT_PASSWORD
+    ports:
+      - "${MYSQL_PORT}:3306"
+    network_mode: bridge
+    volumes:
+      - db-data:/var/lib/mysql:rw
+      - db-logs:/var/logs/mysql:rw
+
+  redis:
+    image: redis:5.0-alpine
+    network_mode: bridge
+
+  web:
+    image: nginx:alpine
+    links:
+      - worker
+    network_mode: bridge
+    ports:
+      - "${WEB_PORT_HTTP}:80"
+    volumes:
+      - "${PWD}:/var/www/html:ro"
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+
+  worker:
+    image: "chialab/php:${PHP_VERSION}-fpm"
+    user: "${CUID}:${CGID}"
+    links:
+      - db
+      - redis
+    network_mode: bridge
+    environment: *env-vars
+    volumes:
+      - "${PWD}:/var/www/html:rw"
+      - /etc/group:/etc/group:ro
+      - /etc/passwd:/etc/passwd:ro
+      - /etc/shadow:/etc/shadow:ro
+
