@@ -214,6 +214,12 @@ run() {
       return 0
     }
 
+    dc() {
+      echo "Execute a Docker Compose command directly, using configured .env* files."
+      echo "Usage: $0 dc [options...]"
+      return 0
+    }
+
     down() {
       echo "Turn off development environment."
       echo "Usage: $0 down [options...]"
@@ -225,6 +231,7 @@ run() {
       echo "Execute a command on a specified container"
       echo "Usage: $0 exec <container> <command> [options...]"
       echo "Example: $0 exec redis redis-cli flushall"
+      echo "For more info, see: docker-compose help exec"
       return 0
     }
 
@@ -235,23 +242,34 @@ run() {
       for type in "${APP_SELF_PATH}"/templates/*; do
         echo "- $(basename "${type}")"
       done
+      return 0
+    }
+
+    logs() {
+      echo "Display container output logs."
+      echo "Usage: $0 logs [-f] [service]"
+      echo "For more info, see: docker-compose help logs"
+      return 0
     }
 
     ps() {
       echo "Display container status for current project"
       echo "Usage: $0 ps"
+      echo "For more info, see: docker-compose help ps"
       return 0
     }
 
     pull() {
       echo "Pull latest development environment images."
       echo "Usage: $0 pull"
+      echo "For more info, see: docker-compose help pull"
       return 0
     }
 
     run() {
       echo "Run a command on the development environment."
       echo "Usage: $0 run <command>"
+      echo "For more info, see: docker-compose help run"
       return 0
     }
 
@@ -276,9 +294,11 @@ run() {
       echo "Usage: $0 <option>"
       echo "The following options are available"
       echo "  console: Open the console"
+      echo "  dc: Execute a Docker Compose command"
       echo "  down: Stop the environment"
       echo "  exec: Execute a command on a container"
       echo "  init: Initialize a project based on a template"
+      echo "  logs: Display container output logs"
       echo "  ps: Display container status"
       echo "  pull: Pull latest images"
       echo "  run: Run a command"
@@ -326,15 +346,21 @@ run() {
     exit 1
   }
 
+  # Show container output logs
+  logs() {
+    $DC logs "$@"
+    return $?
+  }
+
   # Show container status
   ps() {
-    $DC ps
+    $DC ps "$@"
     return $?
   }
 
   # Pull latest images
   pull() {
-    $DC pull
+    $DC pull "$@"
     return $?
   }
 
