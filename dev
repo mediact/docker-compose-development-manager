@@ -54,7 +54,7 @@ load_env() {
 
   # Check and load if environment .env file exists
   # shellcheck source=.env
-  if [ -e "$env_local" ]; then
+  if [ -e "$env" ]; then
     source "$env"
   fi
 
