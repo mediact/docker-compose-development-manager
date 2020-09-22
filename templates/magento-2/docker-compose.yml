@@ -113,8 +113,7 @@ services:
       - /etc/shadow:/etc/shadow:ro
 
   db:
-    image: percona:8.0
-    command: mysqld --default-authentication-plugin=mysql_native_password
+    image: percona:5.7
     networks:
       - backend
     ports:
