@@ -3,9 +3,7 @@ version: "3"
 networks: {}
 volumes:
   db-data:
-  db-logs:
   es-data:
-  web-logs:
 
 services:
   console:
@@ -53,7 +51,6 @@ services:
     network_mode: bridge
     volumes:
       - db-data:/var/lib/mysql:rw
-      - db-logs:/var/logs/mysql:rw
 
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:7.3.1
@@ -87,8 +84,6 @@ services:
       - worker
     volumes:
       - ./var/log:/usr/share/filebeat/data/app-logs:ro
-      - db-logs:/usr/share/filebeat/data/db-logs:ro
-      - web-logs:/usr/share/filebeat/data/web-logs:ro
 
   kibana:
     image: docker.elastic.co/kibana/kibana:7.3.1
@@ -114,9 +109,9 @@ services:
       - "${MAGEMENT_PORT}:80"
     environment:
       - PHP_FPM_HOST=worker:9000
+    working_dir: "${PWD}"
     volumes:
       - "${PWD}/web:${PWD}/web:ro"
-      - web-logs:/var/log/nginx:rw
 
   worker:
     image: eu.gcr.io/aequalis-io/magement-php-fpm
