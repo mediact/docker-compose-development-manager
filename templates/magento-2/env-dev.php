@@ -131,4 +131,13 @@ return [
             ],
         ],
     ],
+    'system' => [
+        'default' => [
+            'twofactorauth' => [
+                'general' => [
+                    'disabled_users' => 'mediact*'
+                ]
+            ]
+        ]
+    ]
 ];

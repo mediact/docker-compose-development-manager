@@ -113,7 +113,7 @@ services:
       - /etc/shadow:/etc/shadow:ro
 
   db:
-    image: percona:5.6
+    image: percona:5.7
     networks:
       - backend
     ports:
