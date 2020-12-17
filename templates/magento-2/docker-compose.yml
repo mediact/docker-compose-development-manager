@@ -102,6 +102,8 @@ services:
     networks:
       - backend
     environment: *env-vars
+    extra_hosts:
+      - "${DNS_NAME}:${HOST_IP}"
     working_dir: "${PWD}"
     volumes:
       - "${HOME}:${CHOME}"
@@ -158,6 +160,8 @@ services:
       - "MAGE_ROOT=${PWD}"
       - PHP_FPM_HOST
       - PHP_FPM_PORT
+    extra_hosts:
+      - "${DNS_NAME}:${HOST_IP}"
     volumes:
       - "${PWD}:${PWD}:ro"
       - ./nginx-map-dev.conf:/etc/nginx/conf.d/map.conf:ro
