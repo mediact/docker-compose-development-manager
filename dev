@@ -341,6 +341,7 @@ run() {
       return $?
     elif [ -e "${APP_PROJECT_PATH}/docker-compose.yml" ] || [ -e "${APP_PROJECT_PATH}/docker-compose.yaml" ]; then
       echo "Warning: Project already initialized. Use --force to re-initialize the project"
+      exit 1
     fi
     run help init
     exit 1
