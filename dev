@@ -25,10 +25,6 @@ load_env() {
     }
   fi
 
-  # Configure .env files
-  local env="${APP_PROJECT_PATH}/.env"
-  local env_local="${APP_PROJECT_PATH}/.env.local"
-
   # Set the default environment
   export SPECIFIED_ENV=dev
 
@@ -49,39 +45,7 @@ load_env() {
   fi
   export SSH_AUTH_SOCK
 
-  # Load all variables as if they are exported
-  set -a
-
-  # Check and load if environment .env file exists
-  # shellcheck source=.env
-  if [ -e "$env" ]; then
-    source "$env"
-  fi
-
-  # Check and load if environment local .env file exists
-  # shellcheck source=.env.local
-  if [ -e "$env_local" ]; then
-    source "$env_local"
-  fi
-
-  # Configure .env files for specified SPECIFIED_ENV
-  local specified_env="${APP_PROJECT_PATH}/.env.${SPECIFIED_ENV}"
-  local specified_env_local="${APP_PROJECT_PATH}/.env.${SPECIFIED_ENV}.local"
-
-  # Check and load if environment specific .env file exists
-  # shellcheck source=.env.dev
-  if [ -e "$specified_env" ]; then
-    source "$specified_env"
-  fi
-
-  # Check and load if environment specific local .env file exists
-  # shellcheck source=.env.dev.local
-  if [ -e "$specified_env_local" ]; then
-    source "$specified_env_local"
-  fi
-
-  # Don't automatically export set variables
-  set +a
+  source_env ${APP_PROJECT_PATH}
 
   export PROJECT=${APP_PROJECT}
   GID=$(id -g)
@@ -101,6 +65,46 @@ load_env() {
   export CUID
   export CGID
   export CHOME
+}
+
+source_env() {
+  # Configure .env files
+  local env="${1}/.env"
+  local env_local="${1}/.env.local"
+
+  # Load all variables as if they are exported
+  set -a
+
+  # Check and load if environment .env file exists
+  # shellcheck source=.env
+  if [ -e "$env" ]; then
+    source "$env"
+  fi
+
+  # Check and load if environment local .env file exists
+  # shellcheck source=.env.local
+  if [ -e "$env_local" ]; then
+    source "$env_local"
+  fi
+
+  # Configure .env files for specified SPECIFIED_ENV
+  local specified_env="${1}/.env.${SPECIFIED_ENV}"
+  local specified_env_local="${1}/.env.${SPECIFIED_ENV}.local"
+
+  # Check and load if environment specific .env file exists
+  # shellcheck source=.env.dev
+  if [ -e "$specified_env" ]; then
+    source "$specified_env"
+  fi
+
+  # Check and load if environment specific local .env file exists
+  # shellcheck source=.env.dev.local
+  if [ -e "$specified_env_local" ]; then
+    source "$specified_env_local"
+  fi
+
+  # Don't automatically export set variables
+  set +a
 }
 
 # Container for all supported commands
@@ -185,7 +189,23 @@ run() {
 
   # Turn off all containers or a specific container
   down() {
-    $DC down "$@"
+    # If there is a docker-compose file present in the current directory, use the default.
+    if [ -e "docker-compose.yml" ] || [ -e "docker-compose.yaml" ]; then
+      $DC down "$@"
+    else
+      local cache_dir
+      cache_dir="${HOME}/.cache/development-manager-docker-compose"
+      if [ -e "${cache_dir}/known_locations" ]; then
+        while read -r location
+          do
+            if [ -e "${location}/docker-compose.yml" ]; then
+              source_env "${location}"
+              $DC -f "${location}/docker-compose.yml" down "$@"
+            fi
+          done < "${cache_dir}/known_locations"
+      fi
+    fi
+
     return $?
   }
 
@@ -385,6 +405,11 @@ run() {
   # Turn on all containers or a specific container
   up() {
     autoupdate
+    local cache_dir
+    cache_dir="${HOME}/.cache/development-manager-docker-compose"
+    if ! grep -qxF $(pwd) "${cache_dir}/known_locations" &> /dev/null; then
+      pwd >> "${cache_dir}/known_locations"
+    fi
     $DC up -d "$@"
     return $?
   }
