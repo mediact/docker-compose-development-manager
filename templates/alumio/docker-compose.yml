@@ -5,6 +5,10 @@ volumes:
   db-data:
   es-data:
 
+x-custom:
+  type: alumio
+  version: 1.0.0
+
 services:
   console:
     image: eu.gcr.io/aequalis-io/magement-console
