@@ -7,6 +7,8 @@ volumes:
   es-data:
 
 x-custom:
+  version: 1.0.0
+  type: magento-2
   environment: &env-vars
     # Environment settings
     - COMPOSER_MEMORY_LIMIT=-1
