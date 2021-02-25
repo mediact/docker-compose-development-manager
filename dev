@@ -45,10 +45,13 @@ load_env() {
   fi
   export SSH_AUTH_SOCK
 
-  source_env ${APP_PROJECT_PATH}
+  source_env "${APP_PROJECT_PATH}"
 
-  export PROJECT=${APP_PROJECT}
+  export PROJECT="${APP_PROJECT}"
+  export CACHE_DIR="${HOME}/.cache/development-manager-docker-compose"
+
   GID=$(id -g)
+
   export GID
   export UID
   if [[ "${MACHINE}" == "windows" ]]; then
@@ -123,21 +126,19 @@ run() {
 
   # Check system and update if marked old
   autoupdate() {
-    local cache_dir
     local cache_limit
     local cache_project
     local cache_tool
 
-    cache_dir="${HOME}/.cache/development-manager-docker-compose"
     cache_limit="${cache_dir}/limit"
     cache_project="${cache_dir}/$(pwd | base64)"
     cache_tool="${cache_dir}/dev"
 
     # Ensure cache directory exists
-    test ! -d "${cache_dir}" && mkdir -p "${cache_dir}"
+    test ! -d "${CACHE_DIR}" && mkdir -p "${CACHE_DIR}"
 
     # Remove old cache files
-    find "${cache_dir}" -type f -mtime +1 -delete
+    find "${CACHE_DIR}" -type f -mtime +1 -delete
 
     # Set limit of last check
     touch -d '-16 hours' "${cache_limit}"
@@ -193,16 +194,14 @@ run() {
     if [ -e "docker-compose.yml" ] || [ -e "docker-compose.yaml" ]; then
       $DC down "$@"
     else
-      local cache_dir
-      cache_dir="${HOME}/.cache/development-manager-docker-compose"
-      if [ -e "${cache_dir}/known_locations" ]; then
+      if [ -e "${CACHE_DIR}/known_locations" ]; then
         while read -r location
           do
             if [ -e "${location}/docker-compose.yml" ]; then
               source_env "${location}"
               $DC -f "${location}/docker-compose.yml" down "$@"
             fi
-          done < "${cache_dir}/known_locations"
+          done < "${CACHE_DIR}/known_locations"
       fi
     fi
 
@@ -405,10 +404,8 @@ run() {
   # Turn on all containers or a specific container
   up() {
     autoupdate
-    local cache_dir
-    cache_dir="${HOME}/.cache/development-manager-docker-compose"
-    if ! grep -qxF $(pwd) "${cache_dir}/known_locations" &> /dev/null; then
-      pwd >> "${cache_dir}/known_locations"
+    if ! grep -qxF $(pwd) "${CACHE_DIR}/known_locations" &> /dev/null; then
+      pwd >> "${CACHE_DIR}/known_locations"
     fi
     $DC up -d "$@"
     return $?
