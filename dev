@@ -132,9 +132,9 @@ run() {
     local cache_project
     local cache_tool
 
-    cache_limit="${cache_dir}/limit"
-    cache_project="${cache_dir}/$(pwd | base64)"
-    cache_tool="${cache_dir}/dev"
+    cache_limit="${CACHE_DIR}/limit"
+    cache_project="${CACHE_DIR}/$(pwd | base64)"
+    cache_tool="${CACHE_DIR}/dev"
 
     # Ensure cache directory exists
     test ! -d "${CACHE_DIR}" && mkdir -p "${CACHE_DIR}"
