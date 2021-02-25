@@ -47,11 +47,13 @@ load_env() {
 
   source_env "${APP_PROJECT_PATH}"
 
-  export PROJECT="${APP_PROJECT}"
-  export CACHE_DIR="${HOME}/.cache/development-manager-docker-compose"
+  PROJECT="${APP_PROJECT}"
+  export PROJECT
+
+  CACHE_DIR="${HOME}/.cache/development-manager-docker-compose"
+  export CACHE_DIR
 
   GID=$(id -g)
-
   export GID
   export UID
   if [[ "${MACHINE}" == "windows" ]]; then
