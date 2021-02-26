@@ -187,6 +187,8 @@ run() {
       # Run the self update command
       selfupdate
     fi
+
+    check
   }
 
   # Open the shell of a container
