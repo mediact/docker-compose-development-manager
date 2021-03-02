@@ -3,11 +3,9 @@ version: "3.4"
 networks: {}
 volumes:
   db-data:
-  db-logs:
-  web-logs:
 
 x-custom:
-  version: 1.0.0
+  version: 1.0.1
   type: magento-1
   environment: &env-vars
     # Environment settings
@@ -56,7 +54,6 @@ services:
     network_mode: bridge
     volumes:
       - db-data:/var/lib/mysql:rw
-      - db-logs:/var/logs/mysql:rw
       - /etc/group:/etc/group:ro
       - /etc/passwd:/etc/passwd:ro
       - /etc/shadow:/etc/shadow:ro
@@ -85,7 +82,6 @@ services:
     volumes:
       - "${PWD}:${PWD}:ro"
       - ./nginx-dev.conf:/etc/nginx/dev.conf:ro
-      - web-logs:/var/log/nginx:rw
 
   worker:
     image: "eu.gcr.io/mct-deployments/magento-2-php-fpm:${PHP_VERSION}"
@@ -99,7 +95,6 @@ services:
     working_dir: "${PWD}"
     volumes:
       - "${PWD}:${PWD}:rw"
-      - "${PWD}/var/log:/var/log/:rw"
       - /etc/group:/etc/group:ro
       - /etc/passwd:/etc/passwd:ro
       - /etc/shadow:/etc/shadow:ro
