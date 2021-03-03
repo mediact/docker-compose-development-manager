@@ -138,6 +138,7 @@ run() {
   APP_SELF_PATH=$(dirname "$(realpath "$0")")
   APP_PROJECT_PATH=$(pwd)
   APP_PROJECT=$(basename "${APP_SELF_PATH}")
+  TRAEFIK_LOCATION="$(realpath "$(dirname "$(realpath "${BASH_SOURCE[0]}" )")/traefik")"
 
   # Turn on and attach to specified container
   attach() {
@@ -240,6 +241,12 @@ run() {
     # If there is a docker-compose file present in the current directory, use the default.
     if [ -e "docker-compose.yml" ] || [ -e "docker-compose.yaml" ]; then
       $DC down "$@"
+      grep -v "$(pwd)" "${CACHE_DIR}/active_environments" > "${CACHE_DIR}/new_active_environments"
+      mv "${CACHE_DIR}/new_active_environments" "${CACHE_DIR}/active_environments"
+
+      if [ "$(grep -v "${TRAEFIK_LOCATION}" "${CACHE_DIR}/active_environments")" == "" ]; then
+        stop_traefik
+      fi
     else
       if [ -e "${CACHE_DIR}/known_locations" ]; then
         while read -r location
@@ -247,6 +254,8 @@ run() {
             if [ -e "${location}/docker-compose.yml" ]; then
               source_env "${location}"
               $DC -f "${location}/docker-compose.yml" down "$@"
+              grep -v "${location}" "${CACHE_DIR}/active_environments" > "${CACHE_DIR}/new_active_environments"
+              mv "${CACHE_DIR}/new_active_environments" "${CACHE_DIR}/active_environments"
             fi
           done < "${CACHE_DIR}/known_locations"
       fi
@@ -453,13 +462,54 @@ run() {
     popd > /dev/null
   }
 
+  # Start the Traefik proxy
+  start_traefik() {
+    # Create the gateway network if it is not yet running
+    if [ "$(docker network list --filter "name=gateway" --format "{{.Name}}")" != "gateway" ]; then
+      echo "Setting up gateway network..."
+      docker network create \
+        --driver=bridge \
+        --attachable \
+        --internal=false \
+        gateway &> /dev/null
+    fi
+
+    # Check if Traefik is already active
+    if ! grep -qxF "${TRAEFIK_LOCATION}" "${CACHE_DIR}/active_environments" &> /dev/null; then
+      $DC -f "${TRAEFIK_LOCATION}/docker-compose.yml" up -d
+      echo "${TRAEFIK_LOCATION}" >> "${CACHE_DIR}/active_environments"
+    fi
+  }
+
+  # Stop the Traefik proxy
+  stop_traefik() {
+    if grep -qxF "${TRAEFIK_LOCATION}" "${CACHE_DIR}/active_environments" &> /dev/null; then
+      $DC -f "${TRAEFIK_LOCATION}/docker-compose.yml" down
+      grep -v "${TRAEFIK_LOCATION}" "${CACHE_DIR}/active_environments" > "${CACHE_DIR}/new_active_environments"
+      mv "${CACHE_DIR}/new_active_environments" "${CACHE_DIR}/active_environments"
+
+      # Remove the gateway network if it is still running
+      if [ "$(docker network list --filter "name=gateway" --format "{{.Name}}")" == "gateway" ]; then
+        echo "Shutting down gateway network..."
+        docker network rm gateway &> /dev/null
+      fi
+    fi
+  }
+
   # Turn on all containers or a specific container
   up() {
     autoupdate
+    start_traefik
     if ! grep -qxF $(pwd) "${CACHE_DIR}/known_locations" &> /dev/null; then
       pwd >> "${CACHE_DIR}/known_locations"
     fi
     $DC up -d "$@"
+
+    # If the environment is not in the active list, add it
+    if ! grep -qxF "$(pwd)" "${CACHE_DIR}/active_environments" &> /dev/null; then
+      pwd >> "${CACHE_DIR}/active_environments"
+    fi
+
     return $?
   }
 

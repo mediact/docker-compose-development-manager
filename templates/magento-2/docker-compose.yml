@@ -2,6 +2,10 @@
 version: "3.4"
 networks:
   backend:
+    internal: true
+  default:
+    external:
+      name: gateway
 volumes:
   db-data:
   es-data:
@@ -104,8 +108,6 @@ services:
     networks:
       - backend
     environment: *env-vars
-    extra_hosts:
-      - "${DNS_NAME}:${HOST_IP}"
     working_dir: "${PWD}"
     volumes:
       - "${HOME}:${CHOME}"
@@ -162,8 +164,6 @@ services:
       - "MAGE_ROOT=${PWD}"
       - PHP_FPM_HOST
       - PHP_FPM_PORT
-    extra_hosts:
-      - "${DNS_NAME}:${HOST_IP}"
     volumes:
       - "${PWD}:${PWD}:ro"
       - ./nginx-map-dev.conf:/etc/nginx/conf.d/map.conf:ro
@@ -173,12 +173,16 @@ services:
     image: eu.gcr.io/mct-deployments/mediacthq-dev-nginx-ssl-proxy
     networks:
       - backend
+      - default
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.${PROJECT_NAME}.rule=Host(`${DNS_NAME}`)"
+      - "traefik.tcp.routers.${PROJECT_NAME}.tls.passthrough=true"
+      - "traefik.tcp.routers.${PROJECT_NAME}.rule=HostSNI(`${DNS_NAME}`)"
+      - "traefik.tcp.services.${PROJECT_NAME}.loadbalancer.server.port=443"
     links:
       - varnish
       - nginx-php-fpm
-    ports:
-      - "${WEB_PORT_HTTP}:80"
-      - "${WEB_PORT_HTTPS}:443"
     environment:
       - PROXY_HOST
       - PROXY_PORT
