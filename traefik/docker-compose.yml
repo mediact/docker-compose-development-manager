@@ -10,11 +10,15 @@ services:
       - "--providers.docker.exposedbydefault=true"
       - "--entrypoints.web.address=:80"
       - "--entrypoints.web-secure.address=:443"
+      - "--entrypoints.web-extra.address=:3200"
+      - "--entrypoints.web-kibana.address=:5601"
     networks:
       - default
     ports:
       - "80:80"
       - "443:443"
+      - "3200:3200"
+      - "5601:5601"
       - "8080:8080"
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock:ro"

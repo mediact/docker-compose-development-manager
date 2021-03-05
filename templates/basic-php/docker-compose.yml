@@ -1,13 +1,18 @@
 # vim: ai:ts=2:sw=2:et
 version: "3.4"
-networks: {}
+networks:
+  backend:
+    internal: true
+  default:
+    external:
+      name: gateway
 volumes:
   db-data:
   db-logs:
 
 x-custom:
   type: basic-php
-  version: 1.0.0
+  version: 1.1.0
   environment: &env-vars
     # Environment settings
     - "HOME=${CHOME}"
@@ -29,7 +34,8 @@ services:
     links:
       - db
       - redis
-    network_mode: bridge
+    networks:
+      - backend
     environment: *env-vars
     working_dir: "${PWD}"
     volumes:
@@ -46,22 +52,31 @@ services:
       - MYSQL_ROOT_PASSWORD
     ports:
       - "${MYSQL_PORT}:3306"
-    network_mode: bridge
+    networks:
+      - backend
     volumes:
       - db-data:/var/lib/mysql:rw
       - db-logs:/var/logs/mysql:rw
 
   redis:
     image: redis:5.0-alpine
-    network_mode: bridge
+    networks:
+      - backend
 
   web:
     image: nginx:alpine
     links:
       - worker
-    network_mode: bridge
-    ports:
-      - "${WEB_PORT_HTTP}:80"
+    networks:
+      - backend
+      - default
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.${PROJECT_NAME}.rule=Host(`${DNS_NAME}`)"
+      - "traefik.tcp.routers.${PROJECT_NAME}.tls.passthrough=true"
+      - "traefik.tcp.routers.${PROJECT_NAME}.rule=HostSNI(`${DNS_NAME}`)"
+      - "traefik.tcp.services.${PROJECT_NAME}.loadbalancer.server.port=443"
+      - "traefik.docker.network=gateway"
     volumes:
       - "${PWD}:/var/www/html:ro"
       - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
@@ -72,7 +87,8 @@ services:
     links:
       - db
       - redis
-    network_mode: bridge
+    networks:
+      - backend
     environment: *env-vars
     volumes:
       - "${PWD}:/var/www/html:rw"

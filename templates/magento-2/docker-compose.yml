@@ -11,7 +11,7 @@ volumes:
   es-data:
 
 x-custom:
-  version: 1.0.0
+  version: 1.1.0
   type: magento-2
   environment: &env-vars
     # Environment settings
@@ -180,6 +180,7 @@ services:
       - "traefik.tcp.routers.${PROJECT_NAME}.tls.passthrough=true"
       - "traefik.tcp.routers.${PROJECT_NAME}.rule=HostSNI(`${DNS_NAME}`)"
       - "traefik.tcp.services.${PROJECT_NAME}.loadbalancer.server.port=443"
+      - "traefik.docker.network=gateway"
     links:
       - varnish
       - nginx-php-fpm
