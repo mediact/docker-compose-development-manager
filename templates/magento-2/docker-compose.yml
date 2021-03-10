@@ -16,6 +16,7 @@ x-custom:
     - HTTPS=on
     - SSH_AUTH_SOCK
     - XDEBUG_CONFIG
+    - COMPOSER_ALLOW_XDEBUG
     # Database settings
     - DB_HOST
     - DB_USER
