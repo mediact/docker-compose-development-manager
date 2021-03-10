@@ -263,6 +263,8 @@ run() {
       fi
     fi
 
+    update_hosts
+
     return $?
   }
 
@@ -368,6 +370,14 @@ run() {
       return 0
     }
 
+    update_hosts() {
+      echo "Update the hosts file based on Traefik configuration."
+      echo "Used to route 'mysql -h' requests to the correct container based on a domain."
+      echo "This is also automatically run whenever '$0 up' and '$0 down' is executed."
+      echo "Usage: $0 update_hosts"
+      return 0
+    }
+
     # Attempt to run a command or output the help
     if [ "$(type -t "$1")" == "function" ]; then
       "$@"
@@ -386,6 +396,7 @@ run() {
       echo "  run: Run a command"
       echo "  selfupdate: Run self update"
       echo "  up: Start the environment"
+      echo "  update_hosts: Update /etc/hosts to match MySQL routing"
     fi
     return $?
   }
@@ -505,6 +516,7 @@ run() {
     if ! grep -qxF $(pwd) "${CACHE_DIR}/known_locations" &> /dev/null; then
       pwd >> "${CACHE_DIR}/known_locations"
     fi
+
     $DC up -d "$@"
 
     # If the environment is not in the active list, add it
@@ -512,7 +524,44 @@ run() {
       pwd >> "${CACHE_DIR}/active_environments"
     fi
 
+    update_hosts
+
     return $?
+  }
+
+  update_hosts() {
+    # Check whether the hosts file is already duplicated or not.
+    if [ "$(wc -l < "${CACHE_DIR}/active_environments")" != "0" ]; then
+      echo "Updating hosts file, script may request a password."
+      if [ ! -e "${CACHE_DIR}/original_hosts" ]; then
+        cat /etc/hosts >> "${CACHE_DIR}/original_hosts"
+      fi
+
+      if [ -e "${CACHE_DIR}/edited_hosts" ]; then
+        rm "${CACHE_DIR}/edited_hosts"
+      fi
+
+      cp "${CACHE_DIR}/original_hosts" "${CACHE_DIR}/edited_hosts"
+
+      {
+        echo "";
+        echo "# Start docker compose development manager";
+        python "${TRAEFIK_LOCATION}/scripts/makehosts.py" >> "${CACHE_DIR}/edited_hosts";
+        echo "# End docker compose development manager";
+        echo "";
+      } >> "${CACHE_DIR}/edited_hosts"
+
+      sudo cp "${CACHE_DIR}/edited_hosts" "/etc/hosts"
+    else
+      if [ -e "${CACHE_DIR}/edited_hosts" ]; then
+        rm "${CACHE_DIR}/edited_hosts"
+      fi
+
+      if [ -e "${CACHE_DIR}/original_hosts" ]; then
+        echo "Reverting hosts file to last known original, script may request a password."
+        sudo mv "${CACHE_DIR}/original_hosts" "/etc/hosts"
+      fi
+    fi
   }
 
   # Attempt to run a command or output the help

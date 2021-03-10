@@ -54,7 +54,7 @@ services:
       - default
     labels:
       - "traefik.enable=true"
-      - "traefik.tcp.routers.db_${PROJECT_NAME}.rule=HostSNI(`*`)"
+      - "traefik.tcp.routers.db_${PROJECT_NAME}.rule=HostSNI(`*`, `db.${DNS_NAME}`)"
       - "traefik.tcp.services.db_${PROJECT_NAME}.loadbalancer.server.port=${MYSQL_PORT}"
       - "traefik.tcp.routers.db_${PROJECT_NAME}.entrypoints=mysql"
       - "traefik.docker.network=gateway"
