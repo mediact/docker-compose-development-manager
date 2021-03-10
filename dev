@@ -256,7 +256,7 @@ run() {
             if [ -e "${location}/docker-compose.yml" ]; then
               source_env "${location}"
               $DC -f "${location}/docker-compose.yml" down "$@"
-              grep -v "${location}" "${CACHE_DIR}/active_environments" > "${CACHE_DIR}/new_active_environments"
+              grep -vxF "${location}" "${CACHE_DIR}/active_environments" > "${CACHE_DIR}/new_active_environments"
               mv "${CACHE_DIR}/new_active_environments" "${CACHE_DIR}/active_environments"
             fi
           done < "${CACHE_DIR}/known_locations"
