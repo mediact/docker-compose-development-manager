@@ -1,8 +1,7 @@
 # vim: ai:ts=2:sw=2:et
 version: "3.4"
 networks:
-  backend:
-    internal: true
+  backend: {}
   default:
     external:
       name: gateway
@@ -51,6 +50,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.dashboard_${PROJECT_NAME}.rule=Host(`dashboard.${DNS_NAME}`)"
+      - "traefik.http.routers.dashboard_${PROJECT_NAME}.entrypoints=web"
       - "traefik.http.services.dashboard_${PROJECT_NAME}.loadbalancer.server.port=${DASHBOARD_PORT}"
       - "traefik.docker.network=gateway"
     networks:
@@ -61,10 +61,15 @@ services:
     image: percona:5.7
     environment:
       - MYSQL_ROOT_PASSWORD
-    ports:
-      - "${MYSQL_PORT}:3306"
     networks:
       - backend
+      - default
+    labels:
+      - "traefik.enable=true"
+      - "traefik.tcp.routers.db_${PROJECT_NAME}.rule=HostSNI(`*`)"
+      - "traefik.tcp.services.db_${PROJECT_NAME}.loadbalancer.server.port=${MYSQL_PORT}"
+      - "traefik.tcp.routers.db_${PROJECT_NAME}.entrypoints=mysql"
+      - "traefik.docker.network=gateway"
     volumes:
       - db-data:/var/lib/mysql:rw
 
@@ -113,6 +118,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.kibana_${PROJECT_NAME}.rule=Host(`kibana.${DNS_NAME}`)"
+      - "traefik.http.routers.kibana_${PROJECT_NAME}.entrypoints=kibana"
       - "traefik.http.services.kibana_${PROJECT_NAME}.loadbalancer.server.port=${KIBANA_PORT}"
       - "traefik.docker.network=gateway"
     environment:
@@ -121,7 +127,9 @@ services:
 
   mailcatch:
     image: mailhog/mailhog
-    network_mode: bridge
+    networks:
+      - backend
+      - default
 
   web:
     image: eu.gcr.io/aequalis-io/magement-nginx
@@ -133,10 +141,9 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.web_${PROJECT_NAME}.rule=Host(`${DNS_NAME}`)"
+      - "traefik.http.routers.web_{PROJECT_NAME}.entrypoints=web-extra"
       - "traefik.http.services.web_${PROJECT_NAME}.loadbalancer.server.port=${MAGEMENT_PORT}"
       - "traefik.docker.network=gateway"
-    ports:
-      - "${MAGEMENT_PORT}"
     environment:
       - PHP_FPM_HOST=worker:9000
     working_dir: "${PWD}"

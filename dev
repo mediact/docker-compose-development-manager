@@ -138,7 +138,7 @@ run() {
   APP_SELF_PATH=$(dirname "$(realpath "$0")")
   APP_PROJECT_PATH=$(pwd)
   APP_PROJECT=$(basename "${APP_SELF_PATH}")
-  TRAEFIK_LOCATION="$(realpath "$(dirname "$(realpath "${BASH_SOURCE[0]}" )")/traefik")"
+  TRAEFIK_LOCATION="$(realpath "$(dirname "$(realpath "$0" )")/traefik")"
 
   # Turn on and attach to specified container
   attach() {
@@ -187,9 +187,8 @@ run() {
 
       # Run the self update command
       selfupdate
+      check
     fi
-
-    check
   }
 
   # Open the shell of a container
@@ -241,10 +240,13 @@ run() {
     # If there is a docker-compose file present in the current directory, use the default.
     if [ -e "docker-compose.yml" ] || [ -e "docker-compose.yaml" ]; then
       $DC down "$@"
-      grep -v "$(pwd)" "${CACHE_DIR}/active_environments" > "${CACHE_DIR}/new_active_environments"
+      if [ ! -e "${CACHE_DIR}/active_environments" ]; then
+          touch "${CACHE_DIR}/active_environments"
+      fi
+      grep -xFv "$(pwd)" "${CACHE_DIR}/active_environments" > "${CACHE_DIR}/new_active_environments"
       mv "${CACHE_DIR}/new_active_environments" "${CACHE_DIR}/active_environments"
 
-      if [ "$(grep -v "${TRAEFIK_LOCATION}" "${CACHE_DIR}/active_environments")" == "" ]; then
+      if [ "$(grep -xFv "${TRAEFIK_LOCATION}" "${CACHE_DIR}/active_environments")" == "" ]; then
         stop_traefik
       fi
     else
@@ -485,7 +487,7 @@ run() {
   stop_traefik() {
     if grep -qxF "${TRAEFIK_LOCATION}" "${CACHE_DIR}/active_environments" &> /dev/null; then
       $DC -f "${TRAEFIK_LOCATION}/docker-compose.yml" down
-      grep -v "${TRAEFIK_LOCATION}" "${CACHE_DIR}/active_environments" > "${CACHE_DIR}/new_active_environments"
+      grep -xFv "${TRAEFIK_LOCATION}" "${CACHE_DIR}/active_environments" > "${CACHE_DIR}/new_active_environments"
       mv "${CACHE_DIR}/new_active_environments" "${CACHE_DIR}/active_environments"
 
       # Remove the gateway network if it is still running

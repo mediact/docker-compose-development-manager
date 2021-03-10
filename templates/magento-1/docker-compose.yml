@@ -1,8 +1,7 @@
 # vim: ai:ts=2:sw=2:et
 version: "3.4"
 networks:
-  backend:
-    internal: true
+  backend: {}
   default:
     external:
       name: gateway
@@ -10,8 +9,8 @@ volumes:
   db-data:
 
 x-custom:
-  version: 1.1.0
   type: magento-1
+  version: 1.1.0
   environment: &env-vars
     # Environment settings
     - "HOME=${CHOME}"
@@ -55,10 +54,15 @@ services:
     image: percona:5.6
     environment:
       - MYSQL_ROOT_PASSWORD
-    ports:
-      - "${MYSQL_PORT}:3306"
     networks:
       - backend
+      - default
+    labels:
+      - "traefik.enable=true"
+      - "traefik.tcp.routers.db_${PROJECT_NAME}.rule=HostSNI(`*`)"
+      - "traefik.tcp.services.db_${PROJECT_NAME}.loadbalancer.server.port=${MYSQL_PORT}"
+      - "traefik.tcp.routers.db_${PROJECT_NAME}.entrypoints=mysql"
+      - "traefik.docker.network=gateway"
     volumes:
       - db-data:/var/lib/mysql:rw
       - /etc/group:/etc/group:ro
@@ -69,8 +73,13 @@ services:
     image: mailhog/mailhog
     networks:
       - backend
-    ports:
-      - "${MAILHOG_PORT}:8025"
+      - default
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.mailcatch_${PROJECT_NAME}.rule=Host(`mailcatch.${BASE_URL}`)"
+      - "traefik.http.routers.mailcatch_${PROJECT_NAME}.entrypoints=mailcatch"
+      - "traefik.http.services.mailcatch_${PROJECT_NAME}.loadbalancer.server.port=${MAILHOG_PORT}"
+      - "traefik.docker.network=gateway"
 
   redis:
     image: redis:5.0-alpine
@@ -87,9 +96,11 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.${PROJECT_NAME}.rule=Host(`${DNS_NAME}`)"
+      - "traefik.http.routers.${PROJECT_NAME}.entrypoints=web"
       - "traefik.tcp.routers.${PROJECT_NAME}.tls.passthrough=true"
       - "traefik.tcp.routers.${PROJECT_NAME}.rule=HostSNI(`${DNS_NAME}`)"
       - "traefik.tcp.services.${PROJECT_NAME}.loadbalancer.server.port=443"
+      - "traefik.tcp.routers.${PROJECT_NAME}.entrypoints=web-secure"
       - "traefik.docker.network=gateway"
     environment:
       - PHP_FPM_HOST=worker:9000

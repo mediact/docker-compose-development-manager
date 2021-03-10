@@ -1,4 +1,4 @@
-version: "3.3"
+version: "3.4"
 
 services:
   traefik:
@@ -11,14 +11,18 @@ services:
       - "--entrypoints.web.address=:80"
       - "--entrypoints.web-secure.address=:443"
       - "--entrypoints.web-extra.address=:3200"
-      - "--entrypoints.web-kibana.address=:5601"
+      - "--entrypoints.mysql.address=:3306"
+      - "--entrypoints.kibana.address=:5601"
+      - "--entrypoints.mailcatch.address=:8025"
     networks:
       - default
     ports:
       - "80:80"
       - "443:443"
       - "3200:3200"
+      - "3306:3306"
       - "5601:5601"
+      - "8025:8025"
       - "8080:8080"
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock:ro"

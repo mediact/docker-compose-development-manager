@@ -1,8 +1,7 @@
 # vim: ai:ts=2:sw=2:et
 version: "3.4"
 networks:
-  backend:
-    internal: true
+  backend: {}
   default:
     external:
       name: gateway
@@ -11,8 +10,8 @@ volumes:
   es-data:
 
 x-custom:
-  version: 1.1.0
   type: magento-2
+  version: 1.1.0
   environment: &env-vars
     # Environment settings
     - COMPOSER_MEMORY_LIMIT=-1
@@ -122,8 +121,13 @@ services:
     image: percona:5.7
     networks:
       - backend
-    ports:
-      - "${MYSQL_PORT}:3306"
+      - default
+    labels:
+      - "traefik.enable=true"
+      - "traefik.tcp.routers.db_${PROJECT_NAME}.rule=HostSNI(`*`)"
+      - "traefik.tcp.services.db_${PROJECT_NAME}.loadbalancer.server.port=${MYSQL_PORT}"
+      - "traefik.tcp.routers.db_${PROJECT_NAME}.entrypoints=mysql"
+      - "traefik.docker.network=gateway"
     environment:
       - MYSQL_ROOT_PASSWORD
     volumes:
@@ -150,8 +154,12 @@ services:
     image: mailhog/mailhog
     networks:
       - backend
-    ports:
-      - "${MAILHOG_PORT}:8025"
+      - default
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.mailcatch_${PROJECT_NAME}.rule=Host(`mailcatch.${BASE_URL}`)"
+      - "traefik.http.routers.mailcatch_${PROJECT_NAME}.entrypoints=mailcatch"
+      - "traefik.docker.network=gateway"
 
   nginx-php-fpm:
     image: eu.gcr.io/mct-deployments/magento-2-nginx-php-fpm
@@ -176,10 +184,12 @@ services:
       - default
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.${PROJECT_NAME}.rule=Host(`${DNS_NAME}`)"
+      - "traefik.http.routers.${PROJECT_NAME}.rule=Host(`${BASE_URL}`)"
+      - "traefik.http.routers.${PROJECT_NAME}.entrypoints=web"
       - "traefik.tcp.routers.${PROJECT_NAME}.tls.passthrough=true"
-      - "traefik.tcp.routers.${PROJECT_NAME}.rule=HostSNI(`${DNS_NAME}`)"
+      - "traefik.tcp.routers.${PROJECT_NAME}.rule=HostSNI(`${BASE_URL}`)"
       - "traefik.tcp.services.${PROJECT_NAME}.loadbalancer.server.port=443"
+      - "traefik.tcp.routers.${PROJECT_NAME}.entrypoints=web-secure"
       - "traefik.docker.network=gateway"
     links:
       - varnish

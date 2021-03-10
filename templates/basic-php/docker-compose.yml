@@ -1,8 +1,7 @@
 # vim: ai:ts=2:sw=2:et
 version: "3.4"
 networks:
-  backend:
-    internal: true
+  backend: {}
   default:
     external:
       name: gateway
@@ -50,10 +49,15 @@ services:
     image: percona:5.7
     environment:
       - MYSQL_ROOT_PASSWORD
-    ports:
-      - "${MYSQL_PORT}:3306"
     networks:
       - backend
+      - default
+    labels:
+      - "traefik.enable=true"
+      - "traefik.tcp.routers.db_${PROJECT_NAME}.rule=HostSNI(`*`)"
+      - "traefik.tcp.services.db_${PROJECT_NAME}.loadbalancer.server.port=${MYSQL_PORT}"
+      - "traefik.tcp.routers.db_${PROJECT_NAME}.entrypoints=mysql"
+      - "traefik.docker.network=gateway"
     volumes:
       - db-data:/var/lib/mysql:rw
       - db-logs:/var/logs/mysql:rw
@@ -73,9 +77,8 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.${PROJECT_NAME}.rule=Host(`${DNS_NAME}`)"
-      - "traefik.tcp.routers.${PROJECT_NAME}.tls.passthrough=true"
-      - "traefik.tcp.routers.${PROJECT_NAME}.rule=HostSNI(`${DNS_NAME}`)"
-      - "traefik.tcp.services.${PROJECT_NAME}.loadbalancer.server.port=443"
+      - "traefik.http.services.${PROJECT_NAME}.loadbalancer.server.port=${WEB_PORT_HTTP}"
+      - "traefik.http.routers.${PROJECT_NAME}.entrypoints=web"
       - "traefik.docker.network=gateway"
     volumes:
       - "${PWD}:/var/www/html:ro"
