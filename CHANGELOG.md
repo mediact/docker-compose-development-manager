@@ -6,4 +6,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [1.0.1]
 ### Changed
-- Template for M2 now also enables xdebugging of composer. 
+- Template for M2 now also enables xdebug of composer.
+
+### Removed
+- Unused variable.
