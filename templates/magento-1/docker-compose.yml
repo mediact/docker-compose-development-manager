@@ -56,13 +56,8 @@ services:
       - MYSQL_ROOT_PASSWORD
     networks:
       - backend
-      - default
     labels:
-      - "traefik.enable=true"
-      - "traefik.tcp.routers.db_${PROJECT_NAME}.rule=HostSNI(`*`, `db.${BASE_URL}`)"
-      - "traefik.tcp.services.db_${PROJECT_NAME}.loadbalancer.server.port=${MYSQL_PORT}"
-      - "traefik.tcp.routers.db_${PROJECT_NAME}.entrypoints=mysql"
-      - "traefik.docker.network=gateway"
+      - "dev_domain=db.${PROJECT_NAME}.local"
     volumes:
       - db-data:/var/lib/mysql:rw
       - /etc/group:/etc/group:ro
