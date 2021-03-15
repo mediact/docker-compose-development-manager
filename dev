@@ -450,6 +450,7 @@ run() {
           do
             if [ -e "${location}/docker-compose.yml" ]; then
               # Change directory so PWD is replaced correctly
+              echo "Project located at ${location}:"
               cd "${location}" || exit
               source_env "${location}"
               $DC -f "${location}/docker-compose.yml" ps "$@"
