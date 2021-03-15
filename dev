@@ -254,6 +254,8 @@ run() {
         while read -r location
           do
             if [ -e "${location}/docker-compose.yml" ]; then
+              # Change directory so PWD is replaced correctly
+              cd "${location}" || exit
               source_env "${location}"
               $DC -f "${location}/docker-compose.yml" down "$@"
               grep -vxF "${location}" "${CACHE_DIR}/active_environments" > "${CACHE_DIR}/new_active_environments"
@@ -439,7 +441,23 @@ run() {
 
   # Show container status
   ps() {
-    $DC ps "$@"
+    # If there is a docker-compose file present in the current directory, use the default.
+    if [ -e "docker-compose.yml" ] || [ -e "docker-compose.yaml" ]; then
+      $DC ps "$@"
+    else
+      if [ -e "${CACHE_DIR}/known_locations" ]; then
+        while read -r location
+          do
+            if [ -e "${location}/docker-compose.yml" ]; then
+              # Change directory so PWD is replaced correctly
+              cd "${location}" || exit
+              source_env "${location}"
+              $DC -f "${location}/docker-compose.yml" ps "$@"
+            fi
+          done < "${CACHE_DIR}/known_locations"
+      fi
+    fi
+
     return $?
   }
 
