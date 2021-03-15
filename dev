@@ -543,7 +543,10 @@ run() {
   # Turn on all containers or a specific container
   up() {
     autoupdate
-    start_traefik
+    if grep -q "traefik.enable=true" "docker-compose.yml"; then
+      start_traefik
+    fi
+
     if ! grep -qxF $(pwd) "${CACHE_DIR}/known_locations" &> /dev/null; then
       pwd >> "${CACHE_DIR}/known_locations"
     fi
@@ -554,7 +557,11 @@ run() {
     if ! grep -qxF "$(pwd)" "${CACHE_DIR}/active_environments" &> /dev/null; then
       pwd >> "${CACHE_DIR}/active_environments"
     fi
-    publish_hosts
+
+    if grep -q "dev_domain=" "docker-compose.yml"; then
+      publish_hosts
+    fi
+
     return $?
   }
 
