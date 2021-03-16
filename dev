@@ -352,6 +352,12 @@ run() {
       return 0
     }
 
+    restore() {
+      echo "Restore previous running instances after shutdown."
+      echo "Usage: $0 restore"
+      return 0
+    }
+
     run() {
       echo "Run a command on the development environment."
       echo "Usage: $0 run <command>"
@@ -387,6 +393,7 @@ run() {
       echo "  logs: Display container output logs"
       echo "  ps: Display container status"
       echo "  pull: Pull latest images"
+      echo "  restore: Restore last development session"
       echo "  run: Run a command"
       echo "  selfupdate: Run self update"
       echo "  up: Start the environment"
@@ -487,6 +494,26 @@ run() {
   pull() {
     $DC pull "$@"
     return $?
+  }
+
+  # Restore previous development session
+  restore() {
+    if [ ! -e "${CACHE_DIR}/active_environments" ]; then
+        touch "${CACHE_DIR}/active_environments"
+    fi
+
+    while read -r location
+      do
+        echo "Attempting to restore ${location}"
+        cd ${location} || exit
+        source_env "${location}"
+        $DC -f "${location}/docker-compose.yml" up -d "$@"
+
+        if grep -q "dev_domain=" "docker-compose.yml"; then
+          publish_hosts
+        fi
+      done < "${CACHE_DIR}/active_environments"
+      return $?
   }
 
   # Run a command
