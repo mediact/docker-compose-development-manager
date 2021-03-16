@@ -273,6 +273,7 @@ run() {
 
   # Execute a command on a specified container
   exec() {
+    restore
     $DC exec "$@"
     return $?
   }
@@ -574,6 +575,7 @@ run() {
   # Run a command
   run() {
     autoupdate
+    restore
     $DC run console "$@"
     return $?
   }
