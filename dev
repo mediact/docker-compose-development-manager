@@ -194,6 +194,7 @@ run() {
   # Open the shell of a container
   console() {
     autoupdate
+    restore
     local shell="console"
     [ "$1" != "" ] && shell=$1
 
@@ -550,19 +551,23 @@ run() {
 
   # Restore previous development session
   restore() {
-    rediscover
+    rediscover &> /dev/null
 
+    CURRENT_DIRECTORY="$(pwd)"
     while read -r location
       do
-        echo "Attempting to restore ${location}"
-        cd ${location} || exit
+        cd "${location}" || exit
         source_env "${location}"
-        $DC -f "${location}/docker-compose.yml" up -d "$@"
-
-        if grep -q "dev_domain=" "docker-compose.yml"; then
-          publish_hosts
+        top_output="$($DC -f "${location}/docker-compose.yml" top)"
+        if [[ $top_output == '' ]]; then
+          echo "Restoring ${location}"
+          $DC -f "${location}/docker-compose.yml" up -d
+          if grep -q "dev_domain=" "docker-compose.yml"; then
+            publish_hosts
+          fi
         fi
       done < "${CACHE_DIR}/active_environments"
+      cd "$CURRENT_DIRECTORY" || exit
       return $?
   }
 
@@ -620,6 +625,7 @@ run() {
   # Turn on all containers or a specific container
   up() {
     autoupdate
+    restore
     if grep -q "traefik.enable=true" "docker-compose.yml"; then
       start_traefik
     fi
