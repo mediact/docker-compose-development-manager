@@ -352,6 +352,12 @@ run() {
       return 0
     }
 
+    rediscover() {
+      echo "Checks whether cached locations still exist."
+      echo "Usage: $0 rediscover"
+      return 0
+    }
+
     restore() {
       echo "Restore previous running instances after shutdown."
       echo "Usage: $0 restore"
@@ -385,14 +391,18 @@ run() {
     else
       echo "Usage: $0 <option>"
       echo "The following options are available"
+      echo "  attach: Attach to a container"
       echo "  console: Open the console"
+      echo "  check: Check if current template is up-to-date"
       echo "  dc: Execute a Docker Compose command"
       echo "  down: Stop the environment"
       echo "  exec: Execute a command on a container"
+      echo "  help: display additional information about a command"
       echo "  init: Initialize a project based on a template"
       echo "  logs: Display container output logs"
       echo "  ps: Display container status"
       echo "  pull: Pull latest images"
+      echo "  rediscover: Checks cached locations for non-existing environments."
       echo "  restore: Restore last development session"
       echo "  run: Run a command"
       echo "  selfupdate: Run self update"
@@ -496,11 +506,51 @@ run() {
     return $?
   }
 
-  # Restore previous development session
-  restore() {
+  # Rediscover known locations
+  rediscover() {
+    if [ ! -e "${CACHE_DIR}/known_locations" ]; then
+        touch "${CACHE_DIR}/known_locations"
+    fi
+
     if [ ! -e "${CACHE_DIR}/active_environments" ]; then
         touch "${CACHE_DIR}/active_environments"
     fi
+
+    touch "${CACHE_DIR}/rediscover_known_locations"
+    touch "${CACHE_DIR}/rediscover_active_environments"
+
+    echo "Checking known locations"
+    while read -r location
+      do
+        if [ -e "${location}/docker-compose.yml" ]; then
+          echo "${location} still exists"
+          echo "${location}" >> "${CACHE_DIR}/rediscover_known_locations"
+        else
+          echo "${location} no longer exists"
+        fi
+      done < "${CACHE_DIR}/known_locations"
+
+    echo "Updating ${CACHE_DIR}/known_locations"
+    mv "${CACHE_DIR}/rediscover_known_locations" "${CACHE_DIR}/known_locations"
+
+    echo "Checking active environments"
+    while read -r location
+      do
+        if [ -e "${location}/docker-compose.yml" ]; then
+          echo "${location} still exists"
+          echo "${location}" >> "${CACHE_DIR}/rediscover_active_environments"
+        else
+          echo "${location} no longer exists"
+        fi
+      done < "${CACHE_DIR}/active_environments"
+
+    echo "Updating ${CACHE_DIR}/active_environments"
+    mv "${CACHE_DIR}/rediscover_active_environments" "${CACHE_DIR}/active_environments"
+  }
+
+  # Restore previous development session
+  restore() {
+    rediscover
 
     while read -r location
       do
