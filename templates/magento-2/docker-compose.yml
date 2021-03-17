@@ -7,7 +7,7 @@ volumes:
   es-data:
 
 x-custom:
-  version: 1.0.1
+  version: 1.1.0
   type: magento-2
   environment: &env-vars
     # Environment settings
@@ -118,7 +118,8 @@ services:
       - /etc/shadow:/etc/shadow:ro
 
   db:
-    image: percona:5.7
+    image: percona:8.0
+    command: mysqld --default-authentication-plugin=mysql_native_password
     networks:
       - backend
     ports:
