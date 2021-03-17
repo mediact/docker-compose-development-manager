@@ -6,6 +6,8 @@ volumes:
   db-logs:
 
 x-custom:
+  type: basic-php
+  version: 1.0.0
   environment: &env-vars
     # Environment settings
     - "HOME=${CHOME}"

@@ -1,9 +1,13 @@
 # vim: ai:ts=2:sw=2:et
-version: "3"
+version: "3.4"
 networks: {}
 volumes:
   db-data:
   es-data:
+
+x-custom:
+  type: alumio
+  version: 1.0.0
 
 services:
   console:

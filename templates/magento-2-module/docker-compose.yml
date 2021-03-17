@@ -4,6 +4,8 @@ networks: {}
 volumes: {}
 
 x-custom:
+  version: 1.0.0
+  type: magento-2-module
   environment: &env-vars
     # Environment settings
     - "HOME=${CHOME}"
