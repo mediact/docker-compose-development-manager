@@ -1,12 +1,16 @@
 # vim: ai:ts=2:sw=2:et
 version: "3.4"
-networks: {}
+networks:
+  backend: {}
+  default:
+    external:
+      name: gateway
 volumes:
   db-data:
 
 x-custom:
-  version: 1.0.2
   type: magento-1
+  version: 1.1.0
   environment: &env-vars
     # Environment settings
     - "HOME=${CHOME}"
@@ -32,7 +36,8 @@ services:
       - db
       - mailcatch
       - redis
-    network_mode: bridge
+    networks:
+      - backend
     environment: *env-vars
     working_dir: "${PWD}"
     volumes:
@@ -49,9 +54,10 @@ services:
     image: percona:5.7
     environment:
       - MYSQL_ROOT_PASSWORD
-    ports:
-      - "${MYSQL_PORT}:3306"
-    network_mode: bridge
+    networks:
+      - backend
+    labels:
+      - "dev_domain=db.${PROJECT_NAME}.local"
     volumes:
       - db-data:/var/lib/mysql:rw
       - /etc/group:/etc/group:ro
@@ -60,22 +66,37 @@ services:
 
   mailcatch:
     image: mailhog/mailhog
-    network_mode: bridge
-    ports:
-      - "${MAILHOG_PORT}:8025"
+    networks:
+      - backend
+      - default
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.mailcatch_${PROJECT_NAME}.rule=Host(`mailcatch.${BASE_URL}`)"
+      - "traefik.http.routers.mailcatch_${PROJECT_NAME}.entrypoints=mailcatch"
+      - "traefik.http.services.mailcatch_${PROJECT_NAME}.loadbalancer.server.port=${MAILHOG_PORT}"
+      - "traefik.docker.network=gateway"
 
   redis:
     image: redis:5.0-alpine
-    network_mode: bridge
+    networks:
+      - backend
 
   web:
     image: eu.gcr.io/mct-deployments/magento-2-nginx
     links:
       - worker
-    network_mode: bridge
-    ports:
-      - "${WEB_PORT_HTTP}:80"
-      - "${WEB_PORT_HTTPS}:443"
+    networks:
+      - backend
+      - default
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.${PROJECT_NAME}.rule=Host(`${DNS_NAME}`)"
+      - "traefik.http.routers.${PROJECT_NAME}.entrypoints=web"
+      - "traefik.tcp.routers.${PROJECT_NAME}.tls.passthrough=true"
+      - "traefik.tcp.routers.${PROJECT_NAME}.rule=HostSNI(`${DNS_NAME}`)"
+      - "traefik.tcp.services.${PROJECT_NAME}.loadbalancer.server.port=443"
+      - "traefik.tcp.routers.${PROJECT_NAME}.entrypoints=web-secure"
+      - "traefik.docker.network=gateway"
     environment:
       - PHP_FPM_HOST=worker:9000
     working_dir: "${PWD}"
@@ -90,7 +111,8 @@ services:
       - db
       - mailcatch
       - redis
-    network_mode: bridge
+    networks:
+      - backend
     environment: *env-vars
     working_dir: "${PWD}"
     volumes:

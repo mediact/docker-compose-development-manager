@@ -72,7 +72,7 @@ load_env() {
   export CHOME
 }
 
-function parse_yaml {
+parse_yaml() {
    local prefix=$2
    local s='[[:space:]]*' w='[a-zA-Z0-9_\-]*' fs=$(echo @|tr @ '\034')
    sed -ne "s|^\($s\):|\1|" \
@@ -138,6 +138,7 @@ run() {
   APP_SELF_PATH=$(dirname "$(realpath "$0")")
   APP_PROJECT_PATH=$(pwd)
   APP_PROJECT=$(basename "${APP_SELF_PATH}")
+  TRAEFIK_LOCATION="$(realpath "$(dirname "$(realpath "$0" )")/traefik")"
 
   # Turn on and attach to specified container
   attach() {
@@ -186,14 +187,14 @@ run() {
 
       # Run the self update command
       selfupdate
+      check
     fi
-
-    check
   }
 
   # Open the shell of a container
   console() {
     autoupdate
+    restore
     local shell="console"
     [ "$1" != "" ] && shell=$1
 
@@ -224,7 +225,11 @@ run() {
           echo "The current docker template is up-to-date."
         fi
       else
-        echo "The current docker template is outdated, please run \"dev init TEMPLATE_NAME -f\" to update it."
+        echo "The current docker template is outdated, please run \"dev init PROJECT_TYPE -f\" to update it."
+        echo "Available project types: "
+        for type in "${APP_SELF_PATH}"/templates/*; do
+          echo "- $(basename "${type}")"
+        done
       fi
     fi
   }
@@ -240,23 +245,39 @@ run() {
     # If there is a docker-compose file present in the current directory, use the default.
     if [ -e "docker-compose.yml" ] || [ -e "docker-compose.yaml" ]; then
       $DC down "$@"
+      if [ ! -e "${CACHE_DIR}/active_environments" ]; then
+          touch "${CACHE_DIR}/active_environments"
+      fi
+      grep -xFv "$(pwd)" "${CACHE_DIR}/active_environments" > "${CACHE_DIR}/new_active_environments"
+      mv "${CACHE_DIR}/new_active_environments" "${CACHE_DIR}/active_environments"
+
+      if [ "$(grep -xFv "${TRAEFIK_LOCATION}" "${CACHE_DIR}/active_environments")" == "" ]; then
+        stop_traefik
+      fi
     else
       if [ -e "${CACHE_DIR}/known_locations" ]; then
         while read -r location
           do
             if [ -e "${location}/docker-compose.yml" ]; then
+              # Change directory so PWD is replaced correctly
+              cd "${location}" || exit
               source_env "${location}"
               $DC -f "${location}/docker-compose.yml" down "$@"
+              grep -vxF "${location}" "${CACHE_DIR}/active_environments" > "${CACHE_DIR}/new_active_environments"
+              mv "${CACHE_DIR}/new_active_environments" "${CACHE_DIR}/active_environments"
             fi
           done < "${CACHE_DIR}/known_locations"
       fi
     fi
+
+    publish_hosts
 
     return $?
   }
 
   # Execute a command on a specified container
   exec() {
+    restore
     $DC exec "$@"
     return $?
   }
@@ -337,6 +358,18 @@ run() {
       return 0
     }
 
+    rediscover() {
+      echo "Checks whether cached locations still exist."
+      echo "Usage: $0 rediscover"
+      return 0
+    }
+
+    restore() {
+      echo "Restore previous running instances after shutdown."
+      echo "Usage: $0 restore"
+      return 0
+    }
+
     run() {
       echo "Run a command on the development environment."
       echo "Usage: $0 run <command>"
@@ -364,14 +397,19 @@ run() {
     else
       echo "Usage: $0 <option>"
       echo "The following options are available"
+      echo "  attach: Attach to a container"
       echo "  console: Open the console"
+      echo "  check: Check if current template is up-to-date"
       echo "  dc: Execute a Docker Compose command"
       echo "  down: Stop the environment"
       echo "  exec: Execute a command on a container"
+      echo "  help: display additional information about a command"
       echo "  init: Initialize a project based on a template"
       echo "  logs: Display container output logs"
       echo "  ps: Display container status"
       echo "  pull: Pull latest images"
+      echo "  rediscover: Checks cached locations for non-existing environments."
+      echo "  restore: Restore last development session"
       echo "  run: Run a command"
       echo "  selfupdate: Run self update"
       echo "  up: Start the environment"
@@ -426,8 +464,48 @@ run() {
 
   # Show container status
   ps() {
-    $DC ps "$@"
+    # If there is a docker-compose file present in the current directory, use the default.
+    if [ -e "docker-compose.yml" ] || [ -e "docker-compose.yaml" ]; then
+      $DC ps "$@"
+    else
+      if [ -e "${CACHE_DIR}/known_locations" ]; then
+        while read -r location
+          do
+            if [ -e "${location}/docker-compose.yml" ]; then
+              # Change directory so PWD is replaced correctly
+              echo "Project located at ${location}:"
+              cd "${location}" || exit
+              source_env "${location}"
+              $DC -f "${location}/docker-compose.yml" ps "$@"
+            fi
+          done < "${CACHE_DIR}/known_locations"
+      fi
+    fi
+
     return $?
+  }
+
+  # Publish all hosts with the dev_domain label
+  publish_hosts() {
+    if [ -e "${CACHE_DIR}/published_hosts" ]; then
+      while read -r line;
+        do
+          kill "$(/bin/ps -ao pid,cmd | grep -Po "[0-9]+ (?=$(echo $line | sed 's/\./\\\./g'))")"
+      done < "${CACHE_DIR}/published_hosts"
+      rm "${CACHE_DIR}/published_hosts"
+    fi
+
+    if [ "$(wc -l < "${CACHE_DIR}/active_environments")" != "0" ]; then
+      for line in $(docker inspect -f '{{if .Config.Labels.dev_domain}}{{.Config.Labels.dev_domain}}-{{range .NetworkSettings.Networks}}{{.IPAddress}}:{{end}}{{end}}' $(docker ps -aq)); do
+        echo "avahi-publish -a ""$(echo "$line" | cut -f1 -d":" | tr '-' ' ')" >> "${CACHE_DIR}/published_hosts"
+      done
+
+      if [ -e "${CACHE_DIR}/published_hosts" ]; then
+        while read -r line; do
+          $($line > /dev/null 2>&1 &)
+        done < "${CACHE_DIR}/published_hosts"
+      fi
+    fi
   }
 
   # Pull latest images
@@ -436,9 +514,74 @@ run() {
     return $?
   }
 
+  # Rediscover known locations
+  rediscover() {
+    if [ ! -e "${CACHE_DIR}/known_locations" ]; then
+        touch "${CACHE_DIR}/known_locations"
+    fi
+
+    if [ ! -e "${CACHE_DIR}/active_environments" ]; then
+        touch "${CACHE_DIR}/active_environments"
+    fi
+
+    touch "${CACHE_DIR}/rediscover_known_locations"
+    touch "${CACHE_DIR}/rediscover_active_environments"
+
+    echo "Checking known locations"
+    while read -r location
+      do
+        if [ -e "${location}/docker-compose.yml" ]; then
+          echo "${location} still exists"
+          echo "${location}" >> "${CACHE_DIR}/rediscover_known_locations"
+        else
+          echo "${location} no longer exists"
+        fi
+      done < "${CACHE_DIR}/known_locations"
+
+    echo "Updating ${CACHE_DIR}/known_locations"
+    mv "${CACHE_DIR}/rediscover_known_locations" "${CACHE_DIR}/known_locations"
+
+    echo "Checking active environments"
+    while read -r location
+      do
+        if [ -e "${location}/docker-compose.yml" ]; then
+          echo "${location} still exists"
+          echo "${location}" >> "${CACHE_DIR}/rediscover_active_environments"
+        else
+          echo "${location} no longer exists"
+        fi
+      done < "${CACHE_DIR}/active_environments"
+
+    echo "Updating ${CACHE_DIR}/active_environments"
+    mv "${CACHE_DIR}/rediscover_active_environments" "${CACHE_DIR}/active_environments"
+  }
+
+  # Restore previous development session
+  restore() {
+    rediscover &> /dev/null
+
+    CURRENT_DIRECTORY="$(pwd)"
+    while read -r location
+      do
+        cd "${location}" || exit
+        source_env "${location}"
+        top_output="$($DC -f "${location}/docker-compose.yml" top)"
+        if [[ $top_output == '' ]]; then
+          echo "Restoring ${location}"
+          $DC -f "${location}/docker-compose.yml" up -d
+          if grep -q "dev_domain=" "docker-compose.yml"; then
+            publish_hosts
+          fi
+        fi
+      done < "${CACHE_DIR}/active_environments"
+      cd "$CURRENT_DIRECTORY" || exit
+      return $?
+  }
+
   # Run a command
   run() {
     autoupdate
+    restore
     $DC run console "$@"
     return $?
   }
@@ -447,19 +590,69 @@ run() {
   selfupdate() {
     # shellcheck disable=SC2164
     pushd "${APP_SELF_PATH}" > /dev/null
-    git pull origin master
+    git pull origin "$(git branch --show-current)"
     chmod +x "$0"
     # shellcheck disable=SC2164
     popd > /dev/null
   }
 
+  # Start the Traefik proxy
+  start_traefik() {
+    # Create the gateway network if it is not yet running
+    if [ "$(docker network list --filter "name=gateway" --format "{{.Name}}")" != "gateway" ]; then
+      echo "Setting up gateway network..."
+      docker network create \
+        --driver=bridge \
+        --attachable \
+        --internal=false \
+        gateway &> /dev/null
+    fi
+
+    # Check if Traefik is already active
+    if ! grep -qxF "${TRAEFIK_LOCATION}" "${CACHE_DIR}/active_environments" &> /dev/null; then
+      $DC -f "${TRAEFIK_LOCATION}/docker-compose.yml" up -d
+      echo "${TRAEFIK_LOCATION}" >> "${CACHE_DIR}/active_environments"
+    fi
+  }
+
+  # Stop the Traefik proxy
+  stop_traefik() {
+    if grep -qxF "${TRAEFIK_LOCATION}" "${CACHE_DIR}/active_environments" &> /dev/null; then
+      $DC -f "${TRAEFIK_LOCATION}/docker-compose.yml" down
+      grep -xFv "${TRAEFIK_LOCATION}" "${CACHE_DIR}/active_environments" > "${CACHE_DIR}/new_active_environments"
+      mv "${CACHE_DIR}/new_active_environments" "${CACHE_DIR}/active_environments"
+
+      # Remove the gateway network if it is still running
+      if [ "$(docker network list --filter "name=gateway" --format "{{.Name}}")" == "gateway" ]; then
+        echo "Shutting down gateway network..."
+        docker network rm gateway &> /dev/null
+      fi
+    fi
+  }
+
   # Turn on all containers or a specific container
   up() {
     autoupdate
+    restore
+    if grep -q "traefik.enable=true" "docker-compose.yml"; then
+      start_traefik
+    fi
+
     if ! grep -qxF $(pwd) "${CACHE_DIR}/known_locations" &> /dev/null; then
       pwd >> "${CACHE_DIR}/known_locations"
     fi
+
     $DC up -d "$@"
+
+    # If the environment is not in the active list, add it
+    if ! grep -qxF "$(pwd)" "${CACHE_DIR}/active_environments" &> /dev/null; then
+      pwd >> "${CACHE_DIR}/active_environments"
+    fi
+
+    if grep -q "dev_domain=" "docker-compose.yml"; then
+      publish_hosts
+    fi
+
     return $?
   }
 

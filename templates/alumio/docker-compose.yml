@@ -1,13 +1,17 @@
 # vim: ai:ts=2:sw=2:et
 version: "3.4"
-networks: {}
+networks:
+  backend: {}
+  default:
+    external:
+      name: gateway
 volumes:
   db-data:
   es-data:
 
 x-custom:
   type: alumio
-  version: 1.0.0
+  version: 1.1.0
 
 services:
   console:
@@ -17,7 +21,8 @@ services:
       - db
       - elasticsearch
       - mailcatch
-    network_mode: bridge
+    networks:
+      - backend
     environment:
       - COMPOSER_MEMORY_LIMIT=-1
       - DATABASE_URL
@@ -42,23 +47,31 @@ services:
 
   dashboard:
     image: eu.gcr.io/aequalis-io/magement-dashboard
-    ports:
-      - "${DASHBOARD_PORT}:80"
-    network_mode: bridge
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.dashboard_${PROJECT_NAME}.rule=Host(`dashboard.${DNS_NAME}`)"
+      - "traefik.http.routers.dashboard_${PROJECT_NAME}.entrypoints=web"
+      - "traefik.http.services.dashboard_${PROJECT_NAME}.loadbalancer.server.port=${DASHBOARD_PORT}"
+      - "traefik.docker.network=gateway"
+    networks:
+      - backend
+      - default
 
   db:
     image: percona:5.7
     environment:
       - MYSQL_ROOT_PASSWORD
-    ports:
-      - "${MYSQL_PORT}:3306"
-    network_mode: bridge
+    networks:
+      - backend
+    labels:
+      - "dev_domain=db.${PROJECT_NAME}.local"
     volumes:
       - db-data:/var/lib/mysql:rw
 
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:7.3.1
-    network_mode: bridge
+    networks:
+      - backend
     environment:
       - ELASTICSEARCH_USERNAME
       - ELASTICSEARCH_PASSWORD
@@ -74,7 +87,8 @@ services:
 
   filebeat:
     image: eu.gcr.io/aequalis-io/magement-filebeat
-    network_mode: bridge
+    networks:
+      - backend
     command: filebeat -e -strict.perms=false
     environment:
       - ELASTICSEARCH_HOST=http://elasticsearch:9200
@@ -93,24 +107,38 @@ services:
     image: docker.elastic.co/kibana/kibana:7.3.1
     links:
       - elasticsearch
-    ports:
-      - "${KIBANA_PORT}:5601"
-    network_mode: bridge
+    networks:
+      - backend
+      - default
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.kibana_${PROJECT_NAME}.rule=Host(`kibana.${DNS_NAME}`)"
+      - "traefik.http.routers.kibana_${PROJECT_NAME}.entrypoints=kibana"
+      - "traefik.http.services.kibana_${PROJECT_NAME}.loadbalancer.server.port=${KIBANA_PORT}"
+      - "traefik.docker.network=gateway"
     environment:
       - ELASTICSEARCH_PASSWORD
       - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
 
   mailcatch:
     image: mailhog/mailhog
-    network_mode: bridge
+    networks:
+      - backend
+      - default
 
   web:
     image: eu.gcr.io/aequalis-io/magement-nginx
     links:
       - worker
-    network_mode: bridge
-    ports:
-      - "${MAGEMENT_PORT}:80"
+    networks:
+      - backend
+      - default
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.web_${PROJECT_NAME}.rule=Host(`${DNS_NAME}`)"
+      - "traefik.http.routers.web_{PROJECT_NAME}.entrypoints=web-extra"
+      - "traefik.http.services.web_${PROJECT_NAME}.loadbalancer.server.port=${MAGEMENT_PORT}"
+      - "traefik.docker.network=gateway"
     environment:
       - PHP_FPM_HOST=worker:9000
     working_dir: "${PWD}"
@@ -124,7 +152,8 @@ services:
       - db
       - elasticsearch
       - mailcatch
-    network_mode: bridge
+    networks:
+      - backend
     environment:
       - DATABASE_URL
       - GOOGLE_OAUTH_CLIENT_ID
