@@ -225,7 +225,11 @@ run() {
           echo "The current docker template is up-to-date."
         fi
       else
-        echo "The current docker template is outdated, please run \"dev init TEMPLATE_NAME -f\" to update it."
+        echo "The current docker template is outdated, please run \"dev init PROJECT_TYPE -f\" to update it."
+        echo "Available project types: "
+        for type in "${APP_SELF_PATH}"/templates/*; do
+          echo "- $(basename "${type}")"
+        done
       fi
     fi
   }
