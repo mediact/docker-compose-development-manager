@@ -7,7 +7,7 @@ volumes:
   es-data:
 
 x-custom:
-  version: 1.1.0
+  version: 1.2.0
   type: magento-2
   environment: &env-vars
     # Environment settings
@@ -84,13 +84,16 @@ x-custom:
 
 services:
   amqp:
-    image: rabbitmq:3.8-alpine
+    image: rabbitmq:3-management-alpine
     networks:
       - backend
     environment:
       - RABBITMQ_DEFAULT_USER
       - RABBITMQ_DEFAULT_PASS
       - RABBITMQ_DEFAULT_VHOST
+    ports:
+      - 5672:5672
+      - 15672:15672
 
   console:
     image: "eu.gcr.io/mct-deployments/magento-2-console:${PHP_VERSION}"
