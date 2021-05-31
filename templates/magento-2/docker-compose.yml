@@ -5,6 +5,7 @@ networks:
 volumes:
   db-data:
   es-data:
+  redis-data:
 
 x-custom:
   version: 1.2.0
@@ -210,6 +211,9 @@ services:
 
   redis:
     image: redis:5.0-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis-data:/data
     networks:
       - backend
 
