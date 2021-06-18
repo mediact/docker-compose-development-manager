@@ -114,11 +114,18 @@ source_env() {
   # Configure .env files for specified SPECIFIED_ENV
   local specified_env="${1}/.env.${SPECIFIED_ENV}"
   local specified_env_local="${1}/.env.${SPECIFIED_ENV}.local"
+  local specified_env_project="${1}/.env.${SPECIFIED_ENV}.project"
 
   # Check and load if environment specific .env file exists
   # shellcheck source=.env.dev
   if [ -e "$specified_env" ]; then
     source "$specified_env"
+  fi
+
+  # Check and load if environment specific local .env file exists
+  # shellcheck source=.env.dev.project
+  if [ -e "$specified_env_project" ]; then
+    source "$specified_env_project"
   fi
 
   # Check and load if environment specific local .env file exists
@@ -406,8 +413,19 @@ run() {
       exit 1
     fi
     if [ ! -e "${APP_PROJECT_PATH}/docker-compose.yml" ] && [ ! -e "${APP_PROJECT_PATH}/docker-compose.yaml" ] || [ "$force" == "1" ]; then
-      cp -prf "${APP_SELF_PATH}"/templates/"${type}"/* "${APP_PROJECT_PATH}"
-      cp -prf "${APP_SELF_PATH}"/templates/"${type}"/.[!.]* "${APP_PROJECT_PATH}"
+      if [[ "${type}" == *"magento-2"* ]] ;then
+        cp -n "${APP_SELF_PATH}"/templates/"${type}"/* "${APP_PROJECT_PATH}"
+        cp -n "${APP_SELF_PATH}"/templates/"${type}"/.[!.]* "${APP_PROJECT_PATH}"
+        cp -f "${APP_SELF_PATH}"/templates/"${type}"/.env.dev \
+        "${APP_SELF_PATH}"/templates/"${type}"/*.vcl \
+        "${APP_SELF_PATH}"/templates/"${type}"/docker-compose.yml \
+        "${APP_SELF_PATH}"/templates/"${type}"/env-dev.php \
+        "${APP_SELF_PATH}"/templates/"${type}"/nginx-dev.conf \
+        "${APP_PROJECT_PATH}"
+      else
+        cp -prf "${APP_SELF_PATH}"/templates/"${type}"/* "${APP_PROJECT_PATH}"
+        cp -prf "${APP_SELF_PATH}"/templates/"${type}"/.[!.]* "${APP_PROJECT_PATH}"
+      fi
       echo "Initialized $type project."
       return $?
     elif [ -e "${APP_PROJECT_PATH}/docker-compose.yml" ] || [ -e "${APP_PROJECT_PATH}/docker-compose.yaml" ]; then
