@@ -8,7 +8,7 @@ volumes:
   redis-data:
 
 x-custom:
-  version: 1.2.0
+  version: 2.0.0
   type: magento-2
   environment: &env-vars
     # Environment settings
@@ -97,7 +97,7 @@ services:
       - 15672:15672
 
   console:
-    image: "eu.gcr.io/mct-deployments/magento-2-console:${PHP_VERSION}"
+    image: "eu.gcr.io/mct-deployments/magento-2-console:php${PHP_VERSION}-composer${COMPOSER_VERSION}"
     user: "${CUID}:${CGID}"
     links:
       - amqp
@@ -188,6 +188,8 @@ services:
     environment:
       - PROXY_HOST
       - PROXY_PORT
+    extra_hosts:
+      - "${DNS_NAME}:${HOST_IP}"
     working_dir: "${PWD}"
 
   php-fpm:
@@ -210,7 +212,7 @@ services:
       - /etc/shadow:/etc/shadow:ro
 
   redis:
-    image: redis:5.0-alpine
+    image: "redis:${REDIS_VERSION}-alpine"
     command: ["redis-server", "--appendonly", "yes"]
     volumes:
       - redis-data:/data
@@ -218,10 +220,10 @@ services:
       - backend
 
   varnish:
-    image: emgag/varnish:5.2.1
+    image: "emgag/varnish:${VARNISH_VERSION}"
     networks:
       - backend
     links:
       - nginx-php-fpm
     volumes:
-      - ./default-dev.vcl:/etc/varnish/default.vcl:ro
+      - "./default-dev-${VARNISH_FILE_VERSION}.vcl:/etc/varnish/default.vcl:ro"

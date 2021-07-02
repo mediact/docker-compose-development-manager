@@ -28,9 +28,16 @@ x-custom:
 ```
 Whenever you update a template in a project make sure you revert the custom changes.
 
+
+Custom changes can now be added in the `.env.dev.project` file (only M2 has this file). Once this file has been added to the
+project it will not be updated again. This way you can easily add your project variables here.
+
 You know when you have to update the templates when you see the message:
 ```yaml
 The current docker template is outdated, 
 please run "dev init TEMPLATE_NAME -f" to update it.
 ```
 
+# Updating Services for M2
+
+It is now possible to update all services specified in docker-compose.yml file.
