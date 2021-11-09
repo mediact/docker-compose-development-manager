@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+# vim: et:sw=2:ts=2:ai
+
+command_register test 'Just a test'
+
+test_help() {
+  echo "Just a test command"
+  return 0
+}
+
+test_command() {
+  echo "Hello world! ($1)"
+  return 0
+}

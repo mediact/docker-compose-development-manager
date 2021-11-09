@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+# vim: et:sw=2:ts=2:ai
+
+# contains_element "$searchTerm" "${arrayVariable[@]"
+# source: https://stackoverflow.com/a/8574392
+contains_element() {
+  local element`` search="$1"
+
+  shift
+  for element; do
+    [[ "$element" == "$search" ]] && return 0
+  done
+
+  return 1
+}

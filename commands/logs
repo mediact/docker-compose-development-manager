@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+# vim: et:sw=2:ts=2:ai
+
+# Turn on and attach to specified container
+command_register logs 'Display container output logs'
+
+logs_help() {
+  echo "Display container output logs."
+  echo "Usage: $0 logs [-f] [service]"
+  echo "For more info, see: docker-compose help logs"
+  return 0
+}
+
+logs_command() {
+  $DC logs "$@"
+  return $?
+}
+

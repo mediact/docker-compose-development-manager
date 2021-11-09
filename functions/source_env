@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+# vim: et:sw=2:ts=2:ai
+
+source_env() {
+  # Configure .env files
+  local env="${1}/.env"
+  local env_local="${1}/.env.local"
+
+  # Load all variables as if they are exported
+  set -a
+
+  # Check and load if environment .env file exists
+  # shellcheck source=.env
+  if [ -e "$env" ]; then
+    source "$env"
+  fi
+
+  # Check and load if environment local .env file exists
+  # shellcheck source=.env.local
+  if [ -e "$env_local" ]; then
+    source "$env_local"
+  fi
+
+  # Configure .env files for specified SPECIFIED_ENV
+  local specified_env="${1}/.env.${SPECIFIED_ENV}"
+  local specified_env_local="${1}/.env.${SPECIFIED_ENV}.local"
+
+  # Check and load if environment specific .env file exists
+  # shellcheck source=.env.dev
+  if [ -e "$specified_env" ]; then
+    source "$specified_env"
+  fi
+
+  # Check and load if environment specific local .env file exists
+  # shellcheck source=.env.dev.local
+  if [ -e "$specified_env_local" ]; then
+    source "$specified_env_local"
+  fi
+
+  # Don't automatically export set variables
+  set +a
+}

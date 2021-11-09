@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+# vim: et:sw=2:ts=2:ai
+
+# Note: associative array needs to be declared in global scope (otherwise unsupported in bash)
+declare -gA command_data
+
+command_register() {
+  local name="$1"
+  local description="$2"
+
+  debug "command" "Registering command '$name'"
+  command_data[$name]="$description"
+}
+
+command_list() {
+  local command
+
+  echo "The following commands are available:"
+  for command in "${!command_data[@]}"; do
+    printf '  %-20s %s\n' "$command" "${command_data[$command]}"
+  done
+}
+
+command_exists() {
+  contains_element "$1" "${!command_data[@]}"
+  return $?
+}

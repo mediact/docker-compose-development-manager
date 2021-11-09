@@ -1,0 +1,73 @@
+#!/usr/bin/env bash
+# vim: et:sw=2:ts=2:ai
+
+# Load environment variables
+load_env() {
+  # We use "tr" to translate the uppercase "uname" output into lowercase
+  UNAME=$(uname -s | tr '[:upper:]' '[:lower:]')
+  # Then we map the output to the names used on the Github releases page
+  case "$UNAME" in
+      linux*)     MACHINE=linux;;
+      darwin*)    MACHINE=macos;;
+      mingw*)     MACHINE=windows;;
+  esac
+  export MACHINE
+
+  # OSX requires coreutils
+  if [[ "${MACHINE}" == "macos" ]] && ! which gtouch > /dev/null; then
+    echo "Required tools are missing, please run: brew install coreutils"
+    exit 1
+  fi
+
+  if [[ "${MACHINE}" == "macos" ]]; then
+    touch() {
+      gtouch "$@"
+    }
+  fi
+
+  # Set the default environment
+  export SPECIFIED_ENV=dev
+
+  # Ensure the docker host is accessible
+  if [[ "${MACHINE}" == "windows" ]]; then
+    HOST_IP=host.docker.internal
+  elif [[ "${MACHINE}" == "macos" ]]; then
+    HOST_IP=host.docker.internal
+  else
+    HOST_IP=$(ip -4 addr show docker0 | grep -Po 'inet \K[\d.]+')
+  fi
+  export HOST_IP
+
+  # Ensure an SSH socket is available
+  if [[ "$SSH_AUTH_SOCK" == "" ]]; then
+    SSH_AUTH_SOCK="/tmp/.ssh-sock"
+    ssh-agent -a "${SSH_AUTH_SOCK}"
+  fi
+  export SSH_AUTH_SOCK
+
+  source_env "${APP_PROJECT_PATH}"
+
+  PROJECT="${APP_PROJECT}"
+  export PROJECT
+
+  CACHE_DIR="${HOME}/.cache/development-manager-docker-compose"
+  export CACHE_DIR
+
+  GID=$(id -g)
+  export GID
+  export UID
+  if [[ "${MACHINE}" == "windows" ]]; then
+    DC="winpty docker-compose"
+    CUID="1000"
+    CGID="1000"
+    CHOME="/home/app"
+  else
+    DC="docker-compose"
+    CUID="${UID}"
+    CGID="${GID}"
+    CHOME="${HOME}"
+  fi
+  export CUID
+  export CGID
+  export CHOME
+}

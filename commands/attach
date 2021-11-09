@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+# vim: et:sw=2:ts=2:ai
+
+# Turn on and attach to specified container
+command_register attach 'Turn on and attach to specified container'
+
+attach_help() {
+  echo "Attach to a container."
+  echo "Usage: $0 attach <container-name>"
+  return 0
+}
+
+attach_command() {
+  $DC up "$1"
+  return $?
+}
+
