@@ -1,0 +1,88 @@
+version: '3.4'
+x-custom:
+  type: pimcore-php8.0
+  version: 1.0.0
+  php-environment: &php-env-vars
+    # Database settings
+    DB_HOST: ~
+    DB_USER: ~
+    DB_PASS: ~
+    DB_NAME: ~
+    #General settings
+    PROJECT_DOCUMENT_ROOT: ~
+
+services:
+  php:
+    image: youwe-pimcore-php:8.0-apache
+    working_dir: "${PWD}"
+    volumes:
+      - "${PWD}:${PWD}"
+    ports:
+      - "${WEB_PORT_HTTP}:80"
+      - "${WEB_PORT_HTTPS}:443"
+    environment:
+      <<: *php-env-vars
+      WWW_DATA_UID: "${CUID}"
+      WWW_DATA_GID: "${CGID}"
+      DOCUMENT_ROOT: "${PWD}/${PROJECT_DOCUMENT_ROOT}"
+    depends_on: [db]
+
+  console:
+    image: youwe-pimcore-console:8.0
+    user: "${CUID}:${CGID}"
+    working_dir: "${PWD}"
+    volumes:
+      - "${HOME}:${CHOME}"
+      - "${PWD}:${PWD}"
+      - "${SSH_AUTH_SOCK}:${SSH_AUTH_SOCK}"
+      - /etc/group:/etc/group:ro
+      - /etc/passwd:/etc/passwd:ro
+      - /etc/shadow:/etc/shadow:ro
+    environment:
+      <<: *php-env-vars
+    depends_on: [db]
+
+  db:
+    image: mysql:8.0.27
+    command:
+      [
+          mysqld,
+          --character-set-server=utf8mb4,
+          --collation-server=utf8mb4_unicode_520_ci,
+          --innodb-file-per-table=1,
+      ]
+    volumes:
+      - db:/var/lib/mysql
+    environment:
+      MYSQL_USER: "${DB_USER}"
+      MYSQL_PASSWORD: "${DB_PASS}"
+      MYSQL_DATABASE: "${DB_NAME}"
+      MYSQL_ROOT_PASSWORD: "${MYSQL_ROOT_PASSWORD}"
+    ports:
+      - "${MYSQL_PORT}:3306"
+
+  redis-alpine:
+    image: redis:5.0.7
+    volumes:
+      - redis-data:/data
+
+  elasticsearch:
+    image: elasticsearch:7.16.1
+    volumes:
+      - elasticsearch:/usr/share/elasticsearch/data
+    environment:
+      - discovery.type=single-node
+      - "ES_JAVA_OPTS=${ES_JAVA_OPTS}"
+    ports:
+      - ${ELASTICSEARCH_PORT_REST}:9200
+      - ${ELASTICSEARCH_PORT_NODE_COMM}:9300
+
+  mail:
+    image: mailhog/mailhog
+    ports:
+      - ${MAILHOG_PORT}:8025
+
+volumes:
+  db:
+  elasticsearch:
+  redis-data:
