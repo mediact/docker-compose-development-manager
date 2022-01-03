@@ -418,6 +418,12 @@ run() {
     exit 1
   }
 
+  # Show docker-compose config
+  config() {
+    $DC config "$@"
+    return $?
+  }
+
   # Show container output logs
   logs() {
     $DC logs "$@"
