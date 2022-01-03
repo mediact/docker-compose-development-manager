@@ -1,0 +1,42 @@
+version: '3.4'
+x-custom:
+  type: pimcore-php8.0
+  version: 1.0.0
+  php-environment: &php-env-vars
+    # Database settings
+    DB_HOST: ~
+    DB_USER: ~
+    DB_PASS: ~
+    DB_NAME: ~
+
+services:
+  php:
+    image: youwe-pimcore-php:8.0-apache
+    working_dir: "${PWD}"
+    volumes:
+      - "${PWD}:${PWD}"
+    ports:
+      - "${WEB_PORT_HTTP:-80}:80"
+      - "${WEB_PORT_HTTPS:-443}:443"
+    environment:
+      <<: *php-env-vars
+      WWW_DATA_UID: "${CUID}"
+      WWW_DATA_GID: "${CGID}"
+      DOCUMENT_ROOT: "${PWD}/${PROJECT_DOCUMENT_ROOT-public}"
+
+  console:
+    image: youwe-pimcore-console:8.0
+    user: "${CUID}:${CGID}"
+    working_dir: "${PWD}"
+    volumes:
+      - "${HOME}:${CHOME}"
+      - "${PWD}:${PWD}"
+      - "${SSH_AUTH_SOCK}:${SSH_AUTH_SOCK}"
+      - /etc/group:/etc/group:ro
+      - /etc/passwd:/etc/passwd:ro
+      - /etc/shadow:/etc/shadow:ro
+    environment:
+      <<: *php-env-vars
+
+#volumes:
+#  pimcore-demo-database:
