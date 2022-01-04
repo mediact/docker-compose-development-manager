@@ -1,0 +1,6 @@
+# PhpStorm / IDEA
+.idea
+# NetBeans
+nbproject
+# VS Code
+.prettierrc.js
