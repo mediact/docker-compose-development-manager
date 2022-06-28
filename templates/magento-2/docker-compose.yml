@@ -6,6 +6,7 @@ volumes:
   db-data:
   es-data:
   redis-data:
+  amqp-data:
 
 x-custom:
   version: 1.2.0
@@ -85,6 +86,7 @@ x-custom:
 
 services:
   amqp:
+    hostname: amqp
     image: rabbitmq:3-management-alpine
     networks:
       - backend
@@ -95,6 +97,8 @@ services:
     ports:
       - 5672:5672
       - 15672:15672
+    volume:
+      - amqp-data:/var/lib/rabbitmq/
 
   console:
     image: "eu.gcr.io/mct-deployments/magento-2-console:${PHP_VERSION}"
