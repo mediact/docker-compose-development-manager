@@ -29,7 +29,8 @@ x-custom:
 
 services:
   console:
-    image: "eu.gcr.io/mct-deployments/magento-2-console:php${PHP_VERSION}-composer2"
+    # TODO: replace by (more lightweight) image that is not dedicated to magento2
+    image: "eu.gcr.io/mct-deployments/magento-2-console-php${PHP_VERSION}:latest"
     user: "${CUID}:${CGID}"
     links:
       - db

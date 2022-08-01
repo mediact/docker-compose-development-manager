@@ -26,7 +26,7 @@ x-custom:
 
 services:
   console:
-    image: "eu.gcr.io/mct-deployments/magento-2-console:${PHP_VERSION}"
+    image: "eu.gcr.io/mct-deployments/magento-2-console-php${PHP_VERSION}-composer1:latest"
     user: "${UID}:${GID}"
     links:
       - db

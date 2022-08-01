@@ -15,7 +15,7 @@ x-custom:
 
 services:
   console:
-    image: "eu.gcr.io/mct-deployments/magento-2-console:${PHP_VERSION}"
+    image: "eu.gcr.io/mct-deployments/magento-2-console-php${PHP_VERSION}:latest"
     user: "${UID}:${GID}"
     network_mode: bridge
     environment: *env-vars
