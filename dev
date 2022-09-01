@@ -64,8 +64,12 @@ load_env() {
   else
     DC="docker-compose"
     CUID="${UID}"
-    CGID="${GID}"
     CHOME="${HOME}"
+    if [[ "${MACHINE}" == "linux" ]]; then
+      CGID=`id -gn`
+    else
+      CGID="${GID}"
+    fi
   fi
   export CUID
   export CGID
