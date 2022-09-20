@@ -34,7 +34,9 @@ load_env() {
   elif [[ "${MACHINE}" == "macos" ]]; then
     HOST_IP=host.docker.internal
   else
-    HOST_IP=$(ip -4 addr show docker0 | grep -Po 'inet \K[\d.]+')
+    WSL=`grep -qEi "(Microsoft|WSL)" /proc/version`
+    [[ $WSL ]] ?? INTERFACE="eth0" || INTERFACE="docker0"
+    HOST_IP=$(ip -4 addr show $INTERFACE | grep -Po 'inet \K[\d.]+')
   fi
   export HOST_IP
 
