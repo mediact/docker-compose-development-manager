@@ -162,7 +162,7 @@ services:
       - "${MAILHOG_PORT}:8025"
 
   nginx-php-fpm:
-    image: eu.gcr.io/mct-deployments/magento-2-nginx-php-fpm
+    image: "eu.gcr.io/mct-deployments/magento2-php-fpm${PHP_VERSION}:latest"
     networks:
       - backend
     links:
