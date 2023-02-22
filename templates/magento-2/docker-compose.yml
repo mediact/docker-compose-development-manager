@@ -5,6 +5,8 @@ networks:
 volumes:
   db-data:
   es-data:
+  redis-data:
+  amqp-data:
 
 x-custom:
   version: 1.3.0
@@ -84,6 +86,7 @@ x-custom:
 
 services:
   amqp:
+    hostname: amqp
     image: rabbitmq:3.9.0-management-alpine
     networks:
       - backend
@@ -94,9 +97,11 @@ services:
     ports:
       - 5672:5672
       - 15672:15672
+    volumes:
+      - amqp-data:/var/lib/rabbitmq/
 
   console:
-    image: "eu.gcr.io/mct-deployments/magento-2-console:${PHP_VERSION}"
+    image: "eu.gcr.io/mct-deployments/magento-2-console-php${PHP_VERSION}:latest"
     user: "${CUID}:${CGID}"
     links:
       - amqp
@@ -121,7 +126,7 @@ services:
       - /etc/shadow:/etc/shadow:ro
 
   db:
-    image: percona:8.0
+    image: percona:8
     command: mysqld --default-authentication-plugin=mysql_native_password
     networks:
       - backend
@@ -157,7 +162,7 @@ services:
       - "${MAILHOG_PORT}:8025"
 
   nginx-php-fpm:
-    image: eu.gcr.io/mct-deployments/magento-2-nginx-php-fpm
+    image: "eu.gcr.io/mct-deployments/magento2-php-fpm${PHP_VERSION}:latest"
     networks:
       - backend
     links:
@@ -209,7 +214,10 @@ services:
       - /etc/shadow:/etc/shadow:ro
 
   redis:
-    image: redis:5.0-alpine
+    image: redis:6.2.0-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis-data:/data
     networks:
       - backend
 
