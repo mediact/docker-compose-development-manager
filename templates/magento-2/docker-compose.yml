@@ -9,7 +9,7 @@ volumes:
   amqp-data:
 
 x-custom:
-  version: 1.2.0
+  version: 1.3.0
   type: magento-2
   environment: &env-vars
     # Environment settings
@@ -162,7 +162,7 @@ services:
       - "${MAILHOG_PORT}:8025"
 
   nginx-php-fpm:
-    image: eu.gcr.io/mct-deployments/magento-2-nginx-php-fpm
+    image: "eu.gcr.io/mct-deployments/magento2-php-fpm${PHP_VERSION}:latest"
     networks:
       - backend
     links:
@@ -214,7 +214,7 @@ services:
       - /etc/shadow:/etc/shadow:ro
 
   redis:
-    image: redis:6-alpine
+    image: redis:6.2.0-alpine
     command: ["redis-server", "--appendonly", "yes"]
     volumes:
       - redis-data:/data
