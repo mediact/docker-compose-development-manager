@@ -87,7 +87,7 @@ x-custom:
 services:
   amqp:
     hostname: amqp
-    image: rabbitmq:3-management-alpine
+    image: rabbitmq:3.9.0-management-alpine
     networks:
       - backend
     environment:
