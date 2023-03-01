@@ -7,7 +7,7 @@ volumes:
 
 x-custom:
   type: alumio
-  version: 1.0.0
+  version: 1.1.0
 
 services:
   console:
@@ -43,7 +43,7 @@ services:
   dashboard:
     image: eu.gcr.io/aequalis-io/magement-dashboard
     ports:
-      - "${DASHBOARD_PORT}:80"
+      - "127.0.0.1:${DASHBOARD_PORT}:80"
     network_mode: bridge
 
   db:
@@ -51,7 +51,7 @@ services:
     environment:
       - MYSQL_ROOT_PASSWORD
     ports:
-      - "${MYSQL_PORT}:3306"
+      - "127.0.0.1:${MYSQL_PORT}:3306"
     network_mode: bridge
     volumes:
       - db-data:/var/lib/mysql:rw
@@ -94,7 +94,7 @@ services:
     links:
       - elasticsearch
     ports:
-      - "${KIBANA_PORT}:5601"
+      - "127.0.0.1:${KIBANA_PORT}:5601"
     network_mode: bridge
     environment:
       - ELASTICSEARCH_PASSWORD
@@ -110,7 +110,7 @@ services:
       - worker
     network_mode: bridge
     ports:
-      - "${MAGEMENT_PORT}:80"
+      - "127.0.0.1:${MAGEMENT_PORT}:80"
     environment:
       - PHP_FPM_HOST=worker:9000
     working_dir: "${PWD}"
