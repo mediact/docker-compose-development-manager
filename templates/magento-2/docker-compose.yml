@@ -9,7 +9,7 @@ volumes:
   amqp-data:
 
 x-custom:
-  version: 1.4.0
+  version: 1.4.1
   type: magento-2
   environment: &env-vars
     # Environment settings
@@ -95,8 +95,8 @@ services:
       - RABBITMQ_DEFAULT_PASS
       - RABBITMQ_DEFAULT_VHOST
     ports:
-      - 5672:5672
-      - 15672:15672
+      - "127.0.0.1:5672:5672"
+      - "127.0.0.1:15672:15672"
     volumes:
       - amqp-data:/var/lib/rabbitmq/
 
