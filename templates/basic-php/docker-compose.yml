@@ -7,7 +7,7 @@ volumes:
 
 x-custom:
   type: basic-php
-  version: 1.0.0
+  version: 1.1.0
   environment: &env-vars
     # Environment settings
     - "HOME=${CHOME}"
@@ -45,7 +45,7 @@ services:
     environment:
       - MYSQL_ROOT_PASSWORD
     ports:
-      - "${MYSQL_PORT}:3306"
+      - "127.0.0.1:${MYSQL_PORT}:3306"
     network_mode: bridge
     volumes:
       - db-data:/var/lib/mysql:rw
@@ -61,7 +61,7 @@ services:
       - worker
     network_mode: bridge
     ports:
-      - "${WEB_PORT_HTTP}:80"
+      - "127.0.0.1:${WEB_PORT_HTTP}:80"
     volumes:
       - "${PWD}:/var/www/html:ro"
       - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro

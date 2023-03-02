@@ -5,7 +5,7 @@ volumes:
   db-data:
 
 x-custom:
-  version: 1.0.2
+  version: 1.1.0
   type: magento-1
   environment: &env-vars
     # Environment settings
@@ -50,7 +50,7 @@ services:
     environment:
       - MYSQL_ROOT_PASSWORD
     ports:
-      - "${MYSQL_PORT}:3306"
+      - "127.0.0.1:${MYSQL_PORT}:3306"
     network_mode: bridge
     volumes:
       - db-data:/var/lib/mysql:rw
@@ -62,7 +62,7 @@ services:
     image: mailhog/mailhog
     network_mode: bridge
     ports:
-      - "${MAILHOG_PORT}:8025"
+      - "127.0.0.1:${MAILHOG_PORT}:8025"
 
   redis:
     image: redis:5.0-alpine
@@ -74,8 +74,8 @@ services:
       - worker
     network_mode: bridge
     ports:
-      - "${WEB_PORT_HTTP}:80"
-      - "${WEB_PORT_HTTPS}:443"
+      - "127.0.0.1:${WEB_PORT_HTTP}:80"
+      - "127.0.0.1:${WEB_PORT_HTTPS}:443"
     environment:
       - PHP_FPM_HOST=worker:9000
     working_dir: "${PWD}"
