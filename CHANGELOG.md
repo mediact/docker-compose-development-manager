@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [1.4.1]
+### Security
+- [INTAINTD-338] Additionally fixed the port bindings for AMQP in the magento-2 template
+
 ## [1.4.0]
 ### Security
 - [INTAINTD-338] Forced binding of all exposed ports to localhost (IPv4). Note that if you have IPv6 enabled and using localhost you might need to explicitly use 127.0.0.1
