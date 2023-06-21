@@ -91,14 +91,15 @@ services:
     networks:
       - backend
     environment:
-      - RABBITMQ_DEFAULT_USER
-      - RABBITMQ_DEFAULT_PASS
-      - RABBITMQ_DEFAULT_VHOST
+      - RMQ_DEFAULT_USER
+      - RMQ_DEFAULT_PASS
+      - RMQ_DEFAULT_VHOST
     ports:
       - "127.0.0.1:5672:5672"
       - "127.0.0.1:15672:15672"
     volumes:
       - amqp-data:/var/lib/rabbitmq/
+      - ./rabbitmq.conf:/etc/rabbitmq/conf.d/99-dev.conf:ro
 
   console:
     image: "eu.gcr.io/mct-deployments/magento-2-console-php${PHP_VERSION}:latest"
