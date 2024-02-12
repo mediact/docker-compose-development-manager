@@ -1,3 +1,9 @@
+# This project is ABANDONED.
+
+Our company has moved to [DDEV](https://ddev.com/), for that reason this repository is deprecated.
+
+---
+
 # Introduction
 
 This tool allows for loading of environment variables similar to 
